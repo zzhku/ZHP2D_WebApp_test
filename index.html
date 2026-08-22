@@ -429,6 +429,33 @@
     .kpi-grid{grid-template-columns:repeat(4,1fr)}
     .temps{grid-template-columns:repeat(5,1fr)}
   }
+
+/* ============ DATA 数据回放 ============ */
+.data-toolbar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:10px; }
+.data-files { display:flex; flex-direction:column; gap:4px; max-height:120px; overflow:auto; margin-bottom:8px; }
+.data-file { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-dim); padding:5px 10px; background:rgba(255,255,255,.03); border:1px solid var(--border); border-radius:8px; cursor:pointer; }
+.data-file.on { border-color:var(--cyan); color:var(--text); }
+.data-file input { accent-color:var(--cyan); }
+.data-file .fname { font-family:'JetBrains Mono',monospace; }
+.data-file .fmeta { color:var(--text-fade); font-size:11px; }
+.data-status { font-size:11px; color:var(--text-fade); min-height:14px; margin-bottom:6px; }
+#data-chart { width:100%; height:300px; background:rgba(255,255,255,.02); border:1px solid var(--border); border-radius:10px; display:block; touch-action:none; }
+.data-panel { display:flex; flex-direction:column; gap:4px; margin-top:10px; }
+.data-cat { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-dim); }
+.data-cat input[type=color] { width:26px; height:22px; border:none; background:none; padding:0; cursor:pointer; }
+.data-cat .cname { width:52px; flex-shrink:0; }
+.data-cat .cunit { color:var(--text-fade); font-size:11px; width:34px; flex-shrink:0; }
+.data-cat .axis { display:flex; gap:4px; }
+.data-cat .axis button { font-size:10px; padding:2px 8px; border-radius:10px; border:1px solid var(--border); background:none; color:var(--text-fade); cursor:pointer; }
+.data-cat .axis button.on { color:var(--cyan); border-color:var(--cyan); }
+.data-cat .axis button.off { color:var(--text-fade); border-color:transparent; }
+.data-play { display:flex; align-items:center; gap:8px; margin-top:10px; flex-wrap:wrap; }
+.data-play button { font-size:12px; }
+#data-readings { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-dim); line-height:1.7; margin-top:8px; }
+#data-stats { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-dim); line-height:1.7; margin-top:6px; white-space:pre-wrap; }
+#data-boots { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+#data-boots button { font-size:11px; padding:3px 10px; border-radius:12px; border:1px solid var(--border); background:none; color:var(--text-dim); cursor:pointer; }
+#data-boots button.on { color:var(--cyan); border-color:var(--cyan); }
 </style>
 </head>
 <body>
@@ -629,6 +656,36 @@
   </div>
 </section>
 
+<!-- ============================= DATA (log_store 回放) ============================= -->
+<section id="view-data" class="view">
+  <div class="card">
+    <div class="card-title"><span>LOG DATA · 数据回放</span></div>
+    <div class="data-toolbar">
+      <button class="btn sm ghost" id="btn-data-refresh">刷新列表</button>
+      <button class="btn sm ghost" id="btn-data-all">全选</button>
+      <button class="btn sm" id="btn-data-load">加载所选</button>
+    </div>
+    <div id="data-status" class="data-status">未连接或未加载</div>
+    <div id="data-files" class="data-files"></div>
+    <div id="data-boots"></div>
+    <canvas id="data-chart" width="600" height="300"></canvas>
+    <div class="data-panel" id="data-panel"></div>
+    <div class="data-play">
+      <button class="btn sm ghost" id="btn-data-prev">&#9198; 起点</button>
+      <button class="btn sm" id="btn-data-play">&#9654; 播放</button>
+      <select id="data-speed" style="font-size:12px;background:#121821;color:var(--text);border:1px solid var(--border);border-radius:8px;padding:4px">
+        <option value="1">1x</option><option value="2">2x</option><option value="4">4x</option>
+        <option value="8">8x</option><option value="16">16x</option><option value="60">60x</option>
+      </select>
+      <span id="data-cursor" style="font-size:11px;color:var(--text-fade)"></span>
+      <button class="btn sm ghost" id="btn-data-export">导出CSV</button>
+    </div>
+    <div id="data-readings"></div>
+    <div id="data-stats"></div>
+    <div style="margin-top:8px;font-size:10px;color:var(--text-fade)">环形存储仅保留最近约 8 小时(8 文件);滚轮缩放、拖拽平移、移动查看数值;深睡唤醒计入开机次数。</div>
+  </div>
+</section>
+
 <section id="view-ota" class="view">
   <div class="card">
     <div class="card-title"><span>FIRMWARE UPDATE · BLE OTA</span></div>
@@ -671,6 +728,10 @@
     <button class="tab" data-view="log">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/></svg>
       <span>LOG</span>
+    </button>
+    <button class="tab" data-view="data">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-6 3 3 5-8"/></svg>
+      <span>DATA</span>
     </button>
     <button class="tab" data-view="ota">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
@@ -1283,7 +1344,6 @@ const SETTING_TREE = [
   { key:'bq_cycle_cnt', title:'循环次数', ui:'label' },
   { title:'配置参数', children:[
     { key:'bq_taper_cur', title:'变100%平均电流', ui:'spinbox', min:1000, max:8000, step:100, unit:'mA' },
-    { key:'bq_term_min_cell_v', title:'Term电压', ui:'spinbox', min:2500, max:3600, step:100, unit:'mV' },
   ]},
 ]},
 ];
@@ -1606,6 +1666,444 @@ $('pw-ok').onclick = async ()=>{
 logI('ZHP2D Console Ready · '+new Date().toLocaleString());
 setConnUI(false);
 drawChart();
+
+/* ===================== DATA · log_store 数据回放 ===================== */
+(() => {
+  const CATS = [
+    { id:'voltage', label:'电压', unit:'mV',  defAxis:'L', color:'#22e6ff', series:[{k:'bus_v',l:'BUS'},{k:'bat_v',l:'BAT'}] },
+    { id:'current', label:'电流', unit:'mA',  defAxis:'L', color:'#78dc52', series:[{k:'bus_i',l:'BUS'},{k:'bat_i',l:'BAT'}] },
+    { id:'power',   label:'功率', unit:'W',   defAxis:'R', color:'#ffd166', series:[{k:'bus_p',l:'BUS'},{k:'bat_p',l:'BAT'}] },
+    { id:'soc',     label:'电量', unit:'%',   defAxis:'R', color:'#b48cff', series:[{k:'cap_soc',l:'CAP'}] },
+    { id:'temp',    label:'温度', unit:'°C',  defAxis:'R', color:'#ff8a5c', series:[{k:'t_led',l:'LED'},{k:'t_m1',l:'M1'},{k:'t_m2',l:'M2'},{k:'t_b1',l:'B1'},{k:'t_b2',l:'B2'}] },
+    { id:'fan',     label:'风扇', unit:'rpm', defAxis:'R', color:'#66d9ff', series:[{k:'fan',l:'FAN'}] },
+  ];
+  const EVENTS = [
+    { bit:0, label:'过热',   color:'rgba(255,60,60,.20)' },
+    { bit:1, label:'输入过温', color:'rgba(255,150,40,.18)' },
+    { bit:2, label:'输出过温', color:'rgba(255,220,60,.16)' },
+    { bit:3, label:'过冷',   color:'rgba(80,140,255,.20)' },
+  ];
+
+  const $ = id => document.getElementById(id);
+  const canvas = $('data-chart');
+  const ctx = canvas.getContext('2d');
+  const DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+  let cfg = {};
+  try { cfg = JSON.parse(localStorage.getItem('zhp2dDataCfg')) || {}; } catch(e){ cfg = {}; }
+  const catCfg = c => (cfg[c.id] || (cfg[c.id] = { axis:c.defAxis, color:c.color }));
+  const saveCfg = () => localStorage.setItem('zhp2dDataCfg', JSON.stringify(cfg));
+
+  let files = [], sel = new Set(), loading = false;
+  const D = { t:[], mono:[], bus_v:[], bus_i:[], bus_p:[], bat_v:[], bat_i:[], bat_p:[], soc:[], cap_soc:[], t_led:[], t_m1:[], t_m2:[], t_b1:[], t_b2:[], flags:[], fan:[] };
+  let boots = [];                 /* [{i0,i1,seq}] */
+  let view = { i0:0, i1:0 };
+  let cursor = -1, hover = -1;
+  let playing = false, speed = 1, lastTs = 0, raf = null;
+
+  const getVal = (k, i) => (k === 'bus_p' || k === 'bat_p') ? D[k][i] / 1000 : D[k][i];
+  const fmtT = s => { if (!s || s <= 0) return '--:--:--'; const d = new Date(s*1000), p = n => String(n).padStart(2,'0'); return p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds()); };
+  const fmtDur = s => { const h = Math.floor(s/3600), m = Math.floor(s%3600/60); return (h ? h+'h' : '') + m + 'm'; };
+
+  /* ---------------- 文件列表 ---------------- */
+  async function refreshList(){
+    $('data-status').textContent = '拉取文件列表...';
+    try {
+      const r = await call('get', 'logs/list');
+      files = r.files || [];
+      renderFiles();
+      $('data-status').textContent = files.length ? ('共 ' + files.length + ' 个文件（环形最近约8小时）') : '无日志文件';
+    } catch(e){ $('data-status').textContent = '列表失败: ' + e; logE('logs/list: ' + e); }
+  }
+  function renderFiles(){
+    const host = $('data-files'); host.innerHTML = '';
+    files.forEach(f => {
+      const row = document.createElement('label');
+      row.className = 'data-file' + (sel.has(f.name) ? ' on' : '');
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = sel.has(f.name);
+      cb.onchange = () => { cb.checked ? sel.add(f.name) : sel.delete(f.name); row.classList.toggle('on', cb.checked); };
+      row.appendChild(cb);
+      const nm = document.createElement('span'); nm.className = 'fname'; nm.textContent = f.name;
+      const mt = document.createElement('span'); mt.className = 'fmeta';
+      mt.textContent = 'seq ' + f.seq + ' · ' + f.records + '条 · ' + (f.size/1024).toFixed(0) + 'KB';
+      row.appendChild(nm); row.appendChild(mt);
+      host.appendChild(row);
+    });
+  }
+
+  /* ---------------- 加载 ---------------- */
+  async function loadSelected(){
+    const names = files.filter(f => sel.has(f.name)).sort((a,b) => a.seq - b.seq).map(f => f.name);
+    if (!names.length){ $('data-status').textContent = '请先勾选文件'; return; }
+    if (loading) return;
+    loading = true;
+    stopPlay();
+    Object.values(D).forEach(a => a.length = 0);
+    boots = []; cursor = -1; hover = -1;
+    try {
+      for (let fi = 0; fi < names.length; fi++){
+        const name = names[fi]; let off = 0, guard = 0;
+        while (true){
+          $('data-status').textContent = '加载 ' + name + ' · 文件 ' + (fi+1) + '/' + names.length + ' · 已 ' + D.t.length + ' 条';
+          const r = await call('get', 'logs/read', { name, offset: off, count: 400 });
+          const rows = r.records || [];
+          if (!rows.length) break;
+          for (const row of rows){
+            D.t.push(row[0] || 0); D.mono.push(row[1] || 0);
+            D.bus_v.push(row[2]); D.bus_i.push(row[3]); D.bus_p.push(row[4]);
+            D.bat_v.push(row[5]); D.bat_i.push(row[6]); D.bat_p.push(row[7]);
+            D.soc.push(row[8]); D.cap_soc.push(row[9]);
+            D.t_led.push(row[10]); D.t_m1.push(row[11]); D.t_m2.push(row[12]);
+            D.t_b1.push(row[13]); D.t_b2.push(row[14]);
+            D.flags.push(row[15]); D.fan.push(row[16]);
+          }
+          off += 400;
+          if (++guard > 40) break;
+        }
+      }
+      computeBoots();
+      view.i0 = 0; view.i1 = Math.max(0, D.t.length - 1);
+      $('data-status').textContent = '加载完成 ' + D.t.length + ' 条（断开蓝牙仍可回放）';
+      renderPanel(); renderBoots(); draw(); renderReadings(); renderStats();
+    } catch(e){ $('data-status').textContent = '加载失败: ' + e; logE('logs/read: ' + e); }
+    loading = false;
+  }
+  function computeBoots(){
+    boots = [];
+    const n = D.t.length;
+    for (let i = 0; i < n; i++){
+      const b = D.mono[i] >> 20;
+      if (!boots.length || boots[boots.length-1].seq !== b){
+        if (boots.length) boots[boots.length-1].i1 = i - 1;
+        boots.push({ i0: i, i1: n-1, seq: b });
+      }
+    }
+  }
+
+  /* ---------------- 面板(分类/轴/颜色) ---------------- */
+  function renderPanel(){
+    const host = $('data-panel'); host.innerHTML = '';
+    CATS.forEach(c => {
+      const cc = catCfg(c);
+      const row = document.createElement('div'); row.className = 'data-cat';
+      const ci = document.createElement('input'); ci.type = 'color'; ci.value = cc.color;
+      ci.onchange = () => { cc.color = ci.value; saveCfg(); draw(); };
+      const nm = document.createElement('span'); nm.className = 'cname'; nm.textContent = c.label;
+      const un = document.createElement('span'); un.className = 'cunit'; un.textContent = c.unit;
+      const ax = document.createElement('span'); ax.className = 'axis';
+      [['L','左轴'],['R','右轴'],['H','隐藏']].forEach(([v, t]) => {
+        const b = document.createElement('button'); b.textContent = t;
+        b.className = cc.axis === v ? 'on' : '';
+        b.onclick = () => { cc.axis = v; saveCfg(); renderPanel(); draw(); };
+        ax.appendChild(b);
+      });
+      row.appendChild(ci); row.appendChild(nm); row.appendChild(un); row.appendChild(ax);
+      host.appendChild(row);
+    });
+  }
+  function renderBoots(){
+    const host = $('data-boots'); host.innerHTML = '';
+    boots.forEach((b, bi) => {
+      const t0 = D.t[b.i0];
+      const t1 = D.t[Math.min(b.i1, D.t.length-1)];
+      const btn = document.createElement('button');
+      btn.textContent = '开机#' + (bi+1) + ' ' + fmtT(t0) + ' · ' + fmtDur(Math.max(0, t1 - t0));
+      btn.onclick = () => { view.i0 = b.i0; view.i1 = Math.min(b.i1, D.t.length-1); draw(); renderStats(); };
+      host.appendChild(btn);
+    });
+  }
+
+  /* ---------------- 图表 ---------------- */
+  function resizeCanvas(){
+    const r = canvas.getBoundingClientRect();
+    canvas.width = Math.max(1, Math.floor(r.width * DPR));
+    canvas.height = Math.max(1, Math.floor(r.height * DPR));
+    draw();
+  }
+  function yRange(axis){
+    let mn = Infinity, mx = -Infinity;
+    for (const c of CATS){
+      const cc = catCfg(c);
+      if (cc.axis !== axis) continue;
+      for (const s of c.series){
+        for (let i = view.i0; i <= view.i1; i++){
+          const v = getVal(s.k, i);
+          if (isFinite(v)){ if (v < mn) mn = v; if (v > mx) mx = v; }
+        }
+      }
+    }
+    if (!isFinite(mn)) { mn = 0; mx = 1; }
+    if (mn === mx){ mn -= 1; mx += 1; }
+    const pad = (mx - mn) * 0.1;
+    return { mn: mn - pad, mx: mx + pad };
+  }
+  function draw(){
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    const n = D.t.length;
+    const P = { l: 44, r: 48, t: 14, b: 24 };
+    const pw = W - P.l - P.r, ph = H - P.t - P.b;
+    if (n < 2 || view.i1 <= view.i0){
+      ctx.fillStyle = 'rgba(139,151,167,.5)';
+      ctx.font = '12px sans-serif';
+      ctx.fillText(n ? '数据范围过小' : '未加载数据', P.l + 10, P.t + 20);
+      return;
+    }
+    const iw = view.i1 - view.i0;
+    const xOf = i => P.l + (i - view.i0) / iw * pw;
+    const YL = yRange('L'), YR = yRange('R');
+    const yOfL = v => P.t + (YL.mx - v) / (YL.mx - YL.mn) * ph;
+    const yOfR = v => P.t + (YR.mx - v) / (YR.mx - YR.mn) * ph;
+    const leftOn = CATS.some(c => catCfg(c).axis === 'L');
+    const rightOn = CATS.some(c => catCfg(c).axis === 'R');
+
+    /* 网格 + 轴标签 */
+    ctx.strokeStyle = 'rgba(255,255,255,.06)';
+    ctx.fillStyle = 'rgba(139,151,167,.9)';
+    ctx.font = '10px monospace';
+    ctx.lineWidth = 1;
+    for (let g = 0; g <= 4; g++){
+      const y = P.t + ph * g / 4;
+      ctx.beginPath(); ctx.moveTo(P.l, y); ctx.lineTo(W - P.r, y); ctx.stroke();
+      if (leftOn){ const v = YL.mx - (YL.mx - YL.mn) * g / 4; ctx.fillText(v.toFixed(0), 2, y + 3); }
+      if (rightOn){ const v = YR.mx - (YR.mx - YR.mn) * g / 4; ctx.fillText(v.toFixed(0), W - P.r + 4, y + 3); }
+    }
+    for (let g = 0; g <= 4; g++){
+      const i = Math.round(view.i0 + iw * g / 4);
+      const x = xOf(i);
+      ctx.beginPath(); ctx.moveTo(x, P.t); ctx.lineTo(x, P.t + ph); ctx.stroke();
+      ctx.fillText(fmtT(D.t[i]), x - 24, H - 8);
+    }
+    /* 轴单位标注 */
+    const lu = CATS.find(c => catCfg(c).axis === 'L');
+    const ru = CATS.find(c => catCfg(c).axis === 'R');
+    ctx.font = '10px sans-serif';
+    if (lu) ctx.fillText(lu.label + '(' + lu.unit + ')', 2, P.t + 10);
+    if (ru) ctx.fillText(ru.label + '(' + ru.unit + ')', W - P.r + 4, P.t + 10);
+
+    /* 事件带 */
+    for (const ev of EVENTS){
+      ctx.fillStyle = ev.color;
+      let run = -1;
+      for (let i = view.i0; i <= view.i1 + 1; i++){
+        const on = i <= view.i1 && (D.flags[i] & (1 << ev.bit));
+        if (on && run < 0) run = i;
+        if (!on && run >= 0){
+          ctx.fillRect(xOf(run), P.t, xOf(i-1) - xOf(run), ph);
+          run = -1;
+        }
+      }
+    }
+    /* 睡眠空洞(boot边界且时间跳变>5s) 灰带 */
+    for (const b of boots){
+      if (b.i0 > 0 && b.i0 >= view.i0 && b.i0 <= view.i1 + 1){
+        const dt = D.t[b.i0] - D.t[b.i0-1];
+        if (dt > 5){
+          ctx.fillStyle = 'rgba(120,120,140,.25)';
+          const x = xOf(b.i0);
+          ctx.fillRect(x - 2, P.t, 4, ph);
+        }
+      }
+    }
+    /* 开机虚线 */
+    ctx.strokeStyle = 'rgba(180,140,255,.55)';
+    ctx.setLineDash([4,4]);
+    ctx.fillStyle = 'rgba(180,140,255,.9)';
+    ctx.font = '10px sans-serif';
+    for (const b of boots){
+      if (b.i0 >= view.i0 && b.i0 <= view.i1){
+        const x = xOf(b.i0);
+        ctx.beginPath(); ctx.moveTo(x, P.t); ctx.lineTo(x, P.t + ph); ctx.stroke();
+        ctx.fillText('开机', x + 3, P.t + 10);
+      }
+    }
+    ctx.setLineDash([]);
+
+    /* 曲线 */
+    for (const c of CATS){
+      const cc = catCfg(c);
+      if (cc.axis === 'H') continue;
+      const yOf = cc.axis === 'L' ? yOfL : yOfR;
+      c.series.forEach((s, si) => {
+        ctx.strokeStyle = cc.color;
+        ctx.setLineDash(si === 0 ? [] : [6,4]);
+        ctx.lineWidth = 1.4;
+        ctx.globalAlpha = si === 0 ? 1 : .75;
+        ctx.beginPath();
+        let started = false;
+        for (let i = view.i0; i <= view.i1; i++){
+          const x = xOf(i), y = yOf(getVal(s.k, i));
+          if (!isFinite(y)){ started = false; continue; }
+          if (!started){ ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.setLineDash([]);
+      });
+    }
+
+    /* 光标(播放/悬停) */
+    const ci = playing ? cursor : (hover >= 0 ? hover : cursor);
+    if (ci >= view.i0 && ci <= view.i1){
+      const x = xOf(ci);
+      ctx.strokeStyle = 'rgba(255,255,255,.5)';
+      ctx.beginPath(); ctx.moveTo(x, P.t); ctx.lineTo(x, P.t + ph); ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.font = '10px monospace';
+      ctx.fillText(fmtT(D.t[ci]), x + 3, P.t + ph - 6);
+      for (const c of CATS){
+        const cc = catCfg(c);
+        if (cc.axis === 'H') continue;
+        const yOf = cc.axis === 'L' ? yOfL : yOfR;
+        c.series.forEach(s => {
+          const y = yOf(getVal(s.k, ci));
+          if (!isFinite(y)) return;
+          ctx.fillStyle = cc.color;
+          ctx.beginPath(); ctx.arc(x, y, 2.2, 0, Math.PI*2); ctx.fill();
+        });
+      }
+    }
+  }
+
+  /* ---------------- 交互 ---------------- */
+  let dragging = null;
+  canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    if (D.t.length < 2) return;
+    const r = canvas.getBoundingClientRect();
+    const mx = (e.clientX - r.left) / r.width;
+    const center = view.i0 + (view.i1 - view.i0) * mx;
+    const factor = e.deltaY > 0 ? 1.25 : 0.8;
+    let span = Math.max(2, Math.round((view.i1 - view.i0) * factor));
+    view.i0 = Math.max(0, Math.round(center - span * mx));
+    view.i1 = Math.min(D.t.length - 1, view.i0 + span);
+    if (view.i1 <= view.i0) view.i1 = Math.min(D.t.length - 1, view.i0 + 1);
+    draw(); renderStats();
+  }, { passive:false });
+  canvas.addEventListener('mousedown', e => {
+    if (D.t.length < 2) return;
+    dragging = { x: e.clientX, i0: view.i0, i1: view.i1 };
+  });
+  window.addEventListener('mousemove', e => {
+    if (dragging){
+      const r = canvas.getBoundingClientRect();
+      const dx = (e.clientX - dragging.x) / r.width * (dragging.i1 - dragging.i0);
+      let i0 = Math.round(dragging.i0 - dx), i1 = Math.round(dragging.i1 - dx);
+      if (i0 < 0){ i1 -= i0; i0 = 0; }
+      if (i1 > D.t.length - 1){ i0 -= i1 - (D.t.length - 1); i1 = D.t.length - 1; }
+      view.i0 = Math.max(0, i0); view.i1 = Math.min(D.t.length - 1, i1);
+      draw(); renderStats();
+    } else if (!playing && D.t.length){
+      const r = canvas.getBoundingClientRect();
+      if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom){
+        hover = Math.round(view.i0 + (view.i1 - view.i0) * (e.clientX - r.left) / r.width);
+        hover = Math.max(view.i0, Math.min(view.i1, hover));
+        draw(); renderReadings();
+      }
+    }
+  });
+  window.addEventListener('mouseup', () => { dragging = null; });
+
+  /* ---------------- 回放 ---------------- */
+  function stopPlay(){ playing = false; if (raf) cancelAnimationFrame(raf); raf = null; $('btn-data-play').textContent = '▶ 播放'; }
+  function togglePlay(){
+    if (D.t.length < 2) return;
+    if (playing){ stopPlay(); return; }
+    playing = true;
+    $('btn-data-play').textContent = '⏸ 暂停';
+    if (cursor < view.i0 || cursor > view.i1) cursor = view.i0;
+    lastTs = performance.now();
+    const step = () => {
+      if (!playing) return;
+      const now = performance.now();
+      const dt = (now - lastTs) / 1000;
+      lastTs = now;
+      cursor += dt * speed;
+      if (cursor > D.t.length - 1){ cursor = D.t.length - 1; stopPlay(); draw(); renderReadings(); return; }
+      const ci = Math.round(cursor);
+      if (ci > view.i1){ const span = view.i1 - view.i0; view.i0 = ci - span; view.i1 = ci; }
+      draw(); renderReadings();
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+  }
+
+  /* ---------------- 读数/统计/导出 ---------------- */
+  function renderReadings(){
+    const host = $('data-readings');
+    const ci = playing ? Math.round(cursor) : (hover >= 0 ? hover : cursor);
+    if (ci < 0 || ci >= D.t.length){ host.innerHTML = ''; return; }
+    const b = boots.find(b => ci >= b.i0 && ci <= b.i1);
+    let html = '<b style="color:var(--cyan)">' + fmtT(D.t[ci]) + '</b>';
+    if (b) html += ' · 开机#' + (boots.indexOf(b) + 1);
+    for (const c of CATS){
+      const cc = catCfg(c);
+      if (cc.axis === 'H') continue;
+      const parts = c.series.map(s => s.l + ' ' + getVal(s.k, ci).toFixed(2));
+      html += ' &nbsp;|&nbsp; <span style="color:' + cc.color + '">' + c.label + ':</span> ' + parts.join(' / ') + ' ' + c.unit;
+    }
+    host.innerHTML = html;
+  }
+  function renderStats(){
+    const host = $('data-stats');
+    if (D.t.length < 2 || view.i1 <= view.i0){ host.textContent = ''; return; }
+    const lines = ['范围: ' + fmtT(D.t[view.i0]) + ' ~ ' + fmtT(D.t[view.i1])];
+    for (const c of CATS){
+      const cc = catCfg(c);
+      if (cc.axis === 'H') continue;
+      for (const s of c.series){
+        let mn = Infinity, mx = -Infinity, sum = 0, cnt = 0;
+        for (let i = view.i0; i <= view.i1; i++){
+          const v = getVal(s.k, i);
+          if (isFinite(v)){ if (v < mn) mn = v; if (v > mx) mx = v; sum += v; cnt++; }
+        }
+        if (cnt) lines.push(c.label + '/' + s.l + ' ' + c.unit + ': min ' + mn.toFixed(1) + ' · max ' + mx.toFixed(1) + ' · avg ' + (sum/cnt).toFixed(1));
+      }
+    }
+    for (const ev of EVENTS){
+      let cnt = 0;
+      for (let i = view.i0; i <= view.i1; i++) if (D.flags[i] & (1 << ev.bit)) cnt++;
+      if (cnt) lines.push('事件 ' + ev.label + ': ' + cnt + ' 次');
+    }
+    host.textContent = lines.join('\n');
+  }
+  function exportCSV(){
+    if (!D.t.length) return;
+    const head = 'epoch,time,mono,bus_v,bus_i,bus_p,bat_v,bat_i,bat_p,soc,cap_soc,t_led,t_m1,t_m2,t_b1,t_b2,flags,fan';
+    const rows = [];
+    for (let i = 0; i < D.t.length; i++){
+      rows.push([D.t[i], fmtT(D.t[i]), D.mono[i], D.bus_v[i], D.bus_i[i], D.bus_p[i], D.bat_v[i], D.bat_i[i], D.bat_p[i], D.soc[i], D.cap_soc[i], D.t_led[i], D.t_m1[i], D.t_m2[i], D.t_b1[i], D.t_b2[i], D.flags[i], D.fan[i]].join(','));
+    }
+    const blob = new Blob([head + '\n' + rows.join('\n')], { type:'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'zhp2d_log_' + Date.now() + '.csv';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    logI('CSV 已导出: ' + rows.length + ' 条');
+  }
+
+  /* ---------------- 绑定 ---------------- */
+  $('btn-data-refresh').onclick = refreshList;
+  $('btn-data-all').onclick = () => {
+    if (files.length && sel.size === files.length){ sel.clear(); }
+    else { files.forEach(f => sel.add(f.name)); }
+    renderFiles();
+  };
+  $('btn-data-load').onclick = loadSelected;
+  $('btn-data-play').onclick = togglePlay;
+  $('btn-data-prev').onclick = () => { if (D.t.length){ stopPlay(); cursor = view.i0; view.i0 = 0; view.i1 = Math.max(0, D.t.length - 1); draw(); renderReadings(); renderStats(); } };
+  $('btn-data-export').onclick = exportCSV;
+  $('data-speed').onchange = e => { speed = parseFloat(e.target.value); };
+  window.addEventListener('resize', () => { if ($('view-data').classList.contains('active')) resizeCanvas(); });
+
+  const origSwitch = switchView;
+  switchView = v => { origSwitch(v); if (v === 'data'){ resizeCanvas(); refreshList(); } };
+
+  renderPanel();
+  resizeCanvas();
+})();
+
 </script>
 </body>
 </html>
