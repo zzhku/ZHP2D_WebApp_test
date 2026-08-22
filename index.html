@@ -828,7 +828,7 @@ function onDisconnect(){
   otaPending.forEach(p=>p.rej('disconnected'));
   otaPending.clear();
   otaBusy=false; otaRefreshUI();
-  dlBuf = new Uint8Array(0); dlResolve=null; dlReject=null; dlExpect=0; dlErr=null;
+  if (window.__zhp2dDl) window.__zhp2dDl.reset();
   rxBuf=''; waitingFirstTele = false; logW('设备已断开');
 }
 /* 配对完成时设备自动开始遥测推送(无需 sub tele).
@@ -850,7 +850,7 @@ async function initAfterPair(){
   try{
     if (dlChr){
       await dlChr.startNotifications();
-      dlChr.addEventListener('characteristicvaluechanged', onDlNotify);
+      dlChr.addEventListener('characteristicvaluechanged', e => { if (window.__zhp2dDl) window.__zhp2dDl.onNotify(e); });
       logI('下载流已启用(二进制块)');
     }
   }catch(e){ logW('下载流启用失败: '+e); dlChr=null; }
@@ -866,83 +866,6 @@ async function initAfterPair(){
     logI('自动对时完成: '+new Date().toLocaleString());
   }catch(e){ logE('自动对时: '+e); }
 }
-/* ===================== log_store 二进制下载流 =====================
- * 块格式(小端): [seq u16][count u16][count*38B 记录][crc16 u16]
- * 结束块 seq=0xFFFF, count=0; 记录 38B 布局见 parseDlRecord */
-let dlBuf = new Uint8Array(0);
-let dlResolve = null, dlReject = null, dlExpect = 0, dlErr = null;
-let dlGot = 0;
-
-function crc16ccitt(bytes){
-  let c = 0xFFFF;
-  for (let i = 0; i < bytes.length; i++){
-    c ^= (bytes[i] << 8);
-    for (let b = 0; b < 8; b++) c = (c & 0x8000) ? ((c << 1) ^ 0x1021) : (c << 1);
-    c &= 0xFFFF;
-  }
-  return c;
-}
-function parseDlRecord(u8, base){
-  const dv = new DataView(u8.buffer, u8.byteOffset + base, 38);
-  const mono = dv.getUint32(0, true);
-  D.t.push(mono + dv.getInt32(4, true)); D.mono.push(mono);
-  D.bus_v.push(dv.getUint16(8, true));  D.bus_i.push(dv.getInt16(10, true));
-  D.bus_p.push(dv.getUint32(12, true));
-  D.bat_v.push(dv.getUint16(16, true)); D.bat_i.push(dv.getInt16(18, true));
-  D.bat_p.push(dv.getUint32(20, true));
-  D.soc.push(dv.getUint8(24));          D.cap_soc.push(dv.getFloat32(25, true));
-  D.t_led.push(dv.getInt8(29)); D.t_m1.push(dv.getInt8(30)); D.t_m2.push(dv.getInt8(31));
-  D.t_b1.push(dv.getInt8(32));  D.t_b2.push(dv.getInt8(33));
-  D.flags.push(dv.getUint8(34));        D.fan.push(dv.getUint16(35, true));
-}
-function onDlNotify(e){
-  const v = new Uint8Array(e.target.value.buffer.slice(e.target.value.byteOffset, e.target.value.byteOffset + e.target.value.byteLength));
-  const nb = new Uint8Array(dlBuf.length + v.length);
-  nb.set(dlBuf, 0); nb.set(v, dlBuf.length);
-  dlBuf = nb;
-  while (dlBuf.length >= 4){
-    const dv = new DataView(dlBuf.buffer, dlBuf.byteOffset);
-    const seq = dv.getUint16(0, true), cnt = dv.getUint16(2, true);
-    if (seq === 0xFFFF){
-      dlBuf = dlBuf.slice(6);
-      if (dlBuf.length) logW('下载流残留 '+dlBuf.length+' 字节');
-      dlGot = 0;
-      if (dlResolve){ const r = dlResolve; dlResolve = null; r(); }
-      continue;
-    }
-    const need = 4 + cnt * 38 + 2;
-    if (dlBuf.length < need) break;
-    if (seq !== dlExpect){
-      dlErr = '块序号跳变 期望=' + dlExpect + ' 实际=' + seq;
-      logE(dlErr);
-      if (dlReject){ const r = dlReject; dlReject = null; r(dlErr); }
-      dlExpect = seq + 1;
-    }
-    const crc = dv.getUint16(4 + cnt * 38, true);
-    const calc = crc16ccitt(dlBuf.subarray(4, 4 + cnt * 38));
-    if (calc === crc){
-      for (let i = 0; i < cnt; i++) parseDlRecord(dlBuf, 4 + i * 38);
-      dlGot++;
-    } else logW('下载块 CRC 错误 seq=' + seq);
-    dlExpect = seq + 1;
-    dlBuf = dlBuf.slice(need);
-    const st = document.getElementById('data-status');
-    if (st && st.textContent.startsWith('下载')) st.textContent = '下载中... 已 ' + D.t.length + ' 条';
-  }
-}
-/* 下载单个文件: 触发设备端流式推送, 等待结束块 */
-function downloadFile(name){
-  return new Promise(async (res, rej) => {
-    dlBuf = new Uint8Array(0); dlExpect = 0; dlErr = null;
-    const to = setTimeout(() => { const r = dlReject; dlReject = null; if (r) r('下载超时'); }, 60000);
-    const done = () => { clearTimeout(to); res(); };
-    const fail = e => { clearTimeout(to); rej(e); };
-    dlResolve = done; dlReject = fail;
-    try { await call('get', 'logs/download', { name, offset: 0 }); }
-    catch(e){ dlResolve = null; dlReject = null; fail('logs/download: ' + e); }
-  });
-}
-
 function onNotify(e){
   const txt = new TextDecoder().decode(e.target.value);
   rxBuf += txt;
@@ -1819,6 +1742,91 @@ drawChart();
   }
 
   /* ---------------- 加载 ---------------- */
+  /* ===================== log_store 二进制下载流 =====================
+   * 块格式(小端): [seq u16][count u16][count*38B 记录][crc16 u16]
+   * 结束块 seq=0xFFFF, count=0; 记录 38B 布局见 parseDlRecord
+   * 必须放在本闭包内: parseDlRecord 访问 D 数组(顶层无此变量, 曾致
+   * ReferenceError -> 收满 60s 超时且零数据) */
+  let dlBuf = new Uint8Array(0);
+  let dlResolve = null, dlReject = null, dlExpect = 0, dlErr = null;
+  let dlArm = null;   /* 收到数据时重置停滞超时 */
+
+  function crc16ccitt(bytes){
+    let c = 0xFFFF;
+    for (let i = 0; i < bytes.length; i++){
+      c ^= (bytes[i] << 8);
+      for (let b = 0; b < 8; b++) c = (c & 0x8000) ? ((c << 1) ^ 0x1021) : (c << 1);
+      c &= 0xFFFF;
+    }
+    return c;
+  }
+  function parseDlRecord(u8, base){
+    const dv = new DataView(u8.buffer, u8.byteOffset + base, 38);
+    const mono = dv.getUint32(0, true);
+    D.t.push(mono + dv.getInt32(4, true)); D.mono.push(mono);
+    D.bus_v.push(dv.getUint16(8, true));  D.bus_i.push(dv.getInt16(10, true));
+    D.bus_p.push(dv.getUint32(12, true));
+    D.bat_v.push(dv.getUint16(16, true)); D.bat_i.push(dv.getInt16(18, true));
+    D.bat_p.push(dv.getUint32(20, true));
+    D.soc.push(dv.getUint8(24));          D.cap_soc.push(dv.getFloat32(25, true));
+    D.t_led.push(dv.getInt8(29)); D.t_m1.push(dv.getInt8(30)); D.t_m2.push(dv.getInt8(31));
+    D.t_b1.push(dv.getInt8(32));  D.t_b2.push(dv.getInt8(33));
+    D.flags.push(dv.getUint8(34));        D.fan.push(dv.getUint16(35, true));
+  }
+  function onDlNotify(e){
+    if (dlArm) dlArm();   /* 任何数据都视为流存活, 重置停滞超时 */
+    const v = new Uint8Array(e.target.value.buffer.slice(e.target.value.byteOffset, e.target.value.byteOffset + e.target.value.byteLength));
+    const nb = new Uint8Array(dlBuf.length + v.length);
+    nb.set(dlBuf, 0); nb.set(v, dlBuf.length);
+    dlBuf = nb;
+    while (dlBuf.length >= 4){
+      const dv = new DataView(dlBuf.buffer, dlBuf.byteOffset);
+      const seq = dv.getUint16(0, true), cnt = dv.getUint16(2, true);
+      if (seq === 0xFFFF){
+        dlBuf = dlBuf.slice(6);
+        if (dlBuf.length) logW('下载流残留 '+dlBuf.length+' 字节');
+        if (dlResolve){ const r = dlResolve; dlResolve = null; r(); }
+        continue;
+      }
+      const need = 4 + cnt * 38 + 2;
+      if (dlBuf.length < need) break;
+      if (seq !== dlExpect){
+        dlErr = '块序号跳变 期望=' + dlExpect + ' 实际=' + seq;
+        logE(dlErr);
+        if (dlReject){ const r = dlReject; dlReject = null; r(dlErr); }
+        dlExpect = seq + 1;
+      }
+      const crc = dv.getUint16(4 + cnt * 38, true);
+      const calc = crc16ccitt(dlBuf.subarray(4, 4 + cnt * 38));
+      if (calc === crc){
+        for (let i = 0; i < cnt; i++) parseDlRecord(dlBuf, 4 + i * 38);
+      } else logW('下载块 CRC 错误 seq=' + seq);
+      dlExpect = seq + 1;
+      dlBuf = dlBuf.slice(need);
+      const st = document.getElementById('data-status');
+      if (st && st.textContent.startsWith('下载')) st.textContent = '下载中... 已 ' + D.t.length + ' 条';
+    }
+  }
+  /* 下载单个文件: 触发设备端流式推送, 等待结束块(停滞 20s 无数据才超时) */
+  function downloadFile(name){
+    return new Promise(async (res, rej) => {
+      dlBuf = new Uint8Array(0); dlExpect = 0; dlErr = null;
+      let to = null;
+      const arm = () => { if (to) clearTimeout(to); to = setTimeout(() => { const r = dlReject; dlReject = null; if (r) r('下载超时'); }, 20000); };
+      const done = () => { if (to) clearTimeout(to); res(); };
+      const fail = e => { if (to) clearTimeout(to); rej(e); };
+      dlResolve = done; dlReject = fail; dlArm = arm;
+      arm();
+      try { await call('get', 'logs/download', { name, offset: 0 }); }
+      catch(e){ dlResolve = null; dlReject = null; fail('logs/download: ' + e); }
+    });
+  }
+  function dlReset(){
+    dlBuf = new Uint8Array(0); dlResolve = null; dlReject = null;
+    dlExpect = 0; dlErr = null; dlArm = null;
+  }
+  window.__zhp2dDl = { onNotify: onDlNotify, reset: dlReset };
+
   async function loadSelected(){
     const names = files.filter(f => sel.has(f.name)).sort((a,b) => a.seq - b.seq).map(f => f.name);
     if (!names.length){ $('data-status').textContent = '请先勾选文件'; return; }
