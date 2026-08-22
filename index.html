@@ -1745,7 +1745,7 @@ drawChart();
         const name = names[fi]; let off = 0, guard = 0;
         while (true){
           $('data-status').textContent = '加载 ' + name + ' · 文件 ' + (fi+1) + '/' + names.length + ' · 已 ' + D.t.length + ' 条';
-          const r = await call('get', 'logs/read', { name, offset: off, count: 400 });
+          const r = await call('get', 'logs/read', { name, offset: off, count: 200 });
           const rows = r.records || [];
           if (!rows.length) break;
           for (const row of rows){
@@ -1757,7 +1757,7 @@ drawChart();
             D.t_b1.push(row[13]); D.t_b2.push(row[14]);
             D.flags.push(row[15]); D.fan.push(row[16]);
           }
-          off += 400;
+          off += 200;
           if (++guard > 40) break;
         }
       }
