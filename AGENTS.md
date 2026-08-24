@@ -4,8 +4,8 @@
 
 ## 设置同步契约（改设置前必读）
 
-设置项契约以**固件** `../main/web/web_cfg_table.c` 为唯一权威，
-完整规则见 **[`../WEBAPP_SYNC_SPEC.md`](../WEBAPP_SYNC_SPEC.md)**。要点：
+设置项契约以**固件** `../ZHP2D/main/web/web_cfg_table.c` 为唯一权威，
+完整规则见 **[`../ZHP2D/WEBAPP_SYNC_SPEC.md`](../ZHP2D/WEBAPP_SYNC_SPEC.md)**。要点：
 
 - `SETTING_TREE`（`index.html` 约 1110 行起）叶子 `key` 必须等于固件 DEF 名
 - ui 类型映射：DEF_UINT→spinbox/slider、DEF_RNG→range、DEF_BOOL→switch、DEF_ENUM→roller(options 与固件 E_XXX 顺序一致)、只读→label
