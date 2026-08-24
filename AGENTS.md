@@ -29,5 +29,6 @@
   `git merge-base --is-ancestor <hash> origin/main`
   - 为真 → 该记录已进正式仓库 → version 改为**发布日期**（正式版），后续修改另起新记录；
   - 为假 → 仍是「未发布开发版」，后续提交继续并入本条。
+- 注意：修复的 BUG 若是本次更新（本发布周期）才引入的，无需在日志中显示（用户从未遇到过）。
 - 三分类：feature=新增 / change=改动 / fix=修复；面向用户语言，无技术名词。
 - 展示副本在 `../ZHP2D_MULTI_LINK/changelog-web.js`，提交后由 Agent 同步。
