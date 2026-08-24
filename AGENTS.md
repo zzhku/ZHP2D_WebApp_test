@@ -1,6 +1,6 @@
 # ZHP2D Web 控制台 — AI 项目说明（AGENTS.md）
 
-本仓库是 ZHP2D 移动电源的 **Web Bluetooth 控制台**（单文件 `index.html`，零依赖）。
+本仓库是 ZHP2D 移动电源的 **Web Bluetooth 控制台**（单文件 `index.html`；DATA 折线图依赖 ECharts CDN）。
 
 ## 设置同步契约（改设置前必读）
 
@@ -17,6 +17,6 @@
 
 ## 本仓库约束
 
-- 零依赖纯静态：不引入构建系统/CDN/框架；改动只在 `index.html`
+- 单文件静态站点（无构建系统/框架）；DATA 折线图依赖 ECharts（经 CDN 引入 `echarts.min.js`，断网时该图表不可用，其余功能仍可离线）；改动只在 `index.html`
 - BLE 交互协议跟随固件 `web_dispatch.c` 的 JSON 格式，键名不得自行发明
 - 中文 commit message；与固件改动相关联的提交互相标注

@@ -14,6 +14,7 @@
 <meta name="apple-mobile-web-app-title" content="ZHP2D" />
 
 <title>ZHP2D · 蓝牙控制台</title>
+
 <style>
   :root{
     --bg-0:#05080f;
@@ -40,13 +41,6 @@
     --grad-warm: linear-gradient(135deg,#ffd84a 0%,#ff5ec1 100%);
     --shadow: 0 6px 24px -8px rgba(34,230,255,.35);
     --r:14px;
-  }
-  [data-theme="light"]{
-    --bg-0:#eef2fa; --bg-1:#f7faff; --bg-2:#ffffff;
-    --bg-card:rgba(255,255,255,.85);
-    --line:rgba(20,40,80,.12); --line-strong:rgba(20,40,80,.25);
-    --text:#0d1428; --text-dim:#3a4a6b; --text-fade:#6c7a96;
-    --shadow: 0 6px 20px -6px rgba(20,60,160,.18);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0;background:var(--bg-0);color:var(--text);
@@ -133,7 +127,7 @@
     border-top:1px solid var(--line);
   }
   .tabs-inner{
-    display:grid;grid-template-columns:repeat(4,1fr);gap:6px;max-width:560px;margin:0 auto;
+    display:grid;grid-template-columns:repeat(5,1fr);gap:6px;max-width:560px;margin:0 auto;
   }
   .tab{
     border:none;background:transparent;color:var(--text-dim);
@@ -433,30 +427,62 @@
 /* ============ DATA 数据回放 ============ */
 .data-toolbar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:10px; }
 .data-files { display:flex; flex-direction:column; gap:4px; max-height:120px; overflow:auto; margin-bottom:8px; }
-.data-file { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-dim); padding:5px 10px; background:rgba(255,255,255,.03); border:1px solid var(--border); border-radius:8px; cursor:pointer; }
+.data-file { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-dim); padding:5px 10px; background:rgba(255,255,255,.03); border:1px solid var(--line); border-radius:8px; cursor:pointer; }
 .data-file.on { border-color:var(--cyan); color:var(--text); }
 .data-file input { accent-color:var(--cyan); }
 .data-file .fname { font-family:'JetBrains Mono',monospace; }
 .data-file .fmeta { color:var(--text-fade); font-size:11px; }
 .data-status { font-size:11px; color:var(--text-fade); min-height:14px; margin-bottom:6px; }
-#data-chart { width:100%; height:300px; background:rgba(255,255,255,.02); border:1px solid var(--border); border-radius:10px; display:block; touch-action:none; }
-.data-panel { display:flex; flex-direction:column; gap:4px; margin-top:10px; }
-.data-cat { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-dim); }
-.data-cat input[type=color] { width:26px; height:22px; border:none; background:none; padding:0; cursor:pointer; }
-.data-cat .cname { width:52px; flex-shrink:0; }
-.data-cat .cunit { color:var(--text-fade); font-size:11px; width:34px; flex-shrink:0; }
-.data-cat .axis { display:flex; gap:4px; }
-.data-cat .axis button { font-size:10px; padding:2px 8px; border-radius:10px; border:1px solid var(--border); background:none; color:var(--text-fade); cursor:pointer; }
-.data-cat .axis button.on { color:var(--cyan); border-color:var(--cyan); }
-.data-cat .axis button.off { color:var(--text-fade); border-color:transparent; }
+.data-progress { height:6px; background:rgba(255,255,255,.08); border-radius:3px; overflow:hidden; margin-bottom:6px; }
+.data-progress-fill { height:100%; width:0%; background:linear-gradient(90deg,var(--cyan),var(--green)); transition:width .25s; }
+.chart-head { display:flex; justify-content:space-between; align-items:center; margin:10px 0 6px; gap:8px; }
+.chart-label { font-size:11px; color:var(--text-dim); letter-spacing:.05em; flex:1; }
+#data-chart-container { width:100%; height:340px; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:rgba(255,255,255,.02); position:relative; touch-action:none; }
+#data-chart-container:fullscreen {
+  width:100vw; height:100vh; height:100dvh;
+  background:
+    radial-gradient(1200px 600px at 100% -10%, rgba(154,107,255,.18), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(34,230,255,.15), transparent 60%),
+    linear-gradient(180deg,var(--bg-0) 0%, var(--bg-1) 100%);
+  border:none; border-radius:0;
+  overflow: visible;
+}
+#data-chart-container:fullscreen::before {
+  content:""; position:absolute; inset:0; pointer-events:none; z-index:1;
+  background-image:
+    linear-gradient(var(--line) 1px,transparent 1px),
+    linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size: 32px 32px;
+  -webkit-mask-image: radial-gradient(circle at 50% 30%, #000 0%, transparent 70%);
+  mask-image: radial-gradient(circle at 50% 30%, #000 0%, transparent 70%);
+  opacity:.5;
+}
+#data-chart-container .u-select { background:rgba(34,230,255,.08); }
+#data-chart-container .u-cursor-x { border-right-color:rgba(255,255,255,.35); }
+#data-chart-container .u-cursor-pt { filter:drop-shadow(0 0 3px rgba(255,255,255,.5)); }
+.data-panel { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:12px; }
+.data-cat { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-dim); padding:6px 7px; border-radius:8px; background:rgba(255,255,255,.02); border:1px solid transparent; }
+.data-cat:hover { border-color:var(--line); }
+.data-cat.off { opacity:0.45; }
+.data-cat input[type=color] { width:26px; height:22px; border:1px solid var(--line-strong); border-radius:6px; background:none; padding:0; cursor:pointer; }
+.data-cat .cname { width:auto; flex-shrink:0; font-weight:600; color:var(--text); }
+.data-cat .cunit { color:var(--text-fade); font-size:10px; width:26px; flex-shrink:0; }
+.data-cat .axis { display:flex; align-items:center; margin-left:auto; }
+.data-cat .axis button { font-size:12px; padding:5px 12px; border:none; background:none; color:var(--text-fade); cursor:pointer; letter-spacing:.05em; min-height:30px; }
+.data-cat .axis button + button { border-left:1px solid var(--line); }
+.data-cat .axis button.on[data-axis="L"] { color:#031019; background:var(--cyan); font-weight:700; }
+.data-cat .axis button.on[data-axis="R"] { color:#fff; background:var(--violet); font-weight:700; }
+.data-cat .axis button.on[data-axis="H"] { color:var(--text-fade); background:rgba(255,255,255,.06); }
 .data-play { display:flex; align-items:center; gap:8px; margin-top:10px; flex-wrap:wrap; }
 .data-play button { font-size:12px; }
 #data-readings { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-dim); line-height:1.7; margin-top:8px; }
 #data-stats { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-dim); line-height:1.7; margin-top:6px; white-space:pre-wrap; }
 #data-boots { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
-#data-boots button { font-size:11px; padding:3px 10px; border-radius:12px; border:1px solid var(--border); background:none; color:var(--text-dim); cursor:pointer; }
+#data-boots button { font-size:11px; padding:3px 10px; border-radius:12px; border:1px solid var(--line); background:none; color:var(--text-dim); cursor:pointer; }
 #data-boots button.on { color:var(--cyan); border-color:var(--cyan); }
 </style>
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 </head>
 <body>
 
@@ -472,7 +498,6 @@
     </div>
     <div class="actions">
       <span id="ble-pill" class="pill"><span class="dot"></span><span id="ble-text">OFFLINE</span></span>
-      <button class="ico-btn" id="btn-theme" title="主题">🌙</button>
     </div>
   </div>
 </header>
@@ -528,7 +553,7 @@
       </div>
       <div class="hero">
         <div>
-          <div class="pwr"><span id="pwr-val">0.00</span><small class="unit-w">W</small><small>OUTPUT</small></div>
+          <div class="pwr"><span id="pwr-val">0.00</span><small class="unit-w">W</small><small id="pwr-state">OUTPUT</small></div>
           <div class="meta">BUS <b id="bus-vi">0.000V / 0.000A</b></div>
           <div class="meta">BAT <b id="bat-vi">0.000V / 0.000A</b></div>
         </div>
@@ -666,14 +691,19 @@
       <button class="btn sm" id="btn-data-load">加载所选</button>
     </div>
     <div id="data-status" class="data-status">未连接或未加载</div>
+    <div class="data-progress" id="data-progress" style="display:none"><div class="data-progress-fill" id="data-progress-fill"></div></div>
     <div id="data-files" class="data-files"></div>
     <div id="data-boots"></div>
-    <canvas id="data-chart" width="600" height="300"></canvas>
+    <div class="chart-head">
+      <span class="chart-label">折线图 · 双指缩放 · 点按查看数值</span>
+      <button class="chip sm" id="btn-chart-full">⛶ 全屏</button>
+    </div>
+    <div id="data-chart-container"></div>
     <div class="data-panel" id="data-panel"></div>
     <div class="data-play">
       <button class="btn sm ghost" id="btn-data-prev">&#9198; 起点</button>
       <button class="btn sm" id="btn-data-play">&#9654; 播放</button>
-      <select id="data-speed" style="font-size:12px;background:#121821;color:var(--text);border:1px solid var(--border);border-radius:8px;padding:4px">
+      <select id="data-speed" style="font-size:12px;background:#121821;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:4px">
         <option value="1">1x</option><option value="2">2x</option><option value="4">4x</option>
         <option value="8">8x</option><option value="16">16x</option><option value="60">60x</option>
       </select>
@@ -682,7 +712,7 @@
     </div>
     <div id="data-readings"></div>
     <div id="data-stats"></div>
-    <div style="margin-top:8px;font-size:10px;color:var(--text-fade)">环形存储仅保留最近约 8 小时(8 文件);滚轮缩放、拖拽平移、移动查看数值;深睡唤醒计入开机次数。</div>
+    <div style="margin-top:8px;font-size:10px;color:var(--text-fade)">双指缩放、拖拽平移、点按查看数值;深睡唤醒计入开机次数。</div>
   </div>
 </section>
 
@@ -783,6 +813,22 @@ function setConnUI(on){
   }
 }
 
+/* 首次连接时 TX 订阅(CCCD 写)因"未加密"被拒 -> 触发手机系统配对;
+ * Chrome 不会自动重试, 配对完成后这里重试一次。 */
+async function startNotificationsWithPairing(chr){
+  for (let i=0; i<3; i++){
+    try { await chr.startNotifications(); return; }
+    catch(e){
+      if (i < 2){
+        logW('订阅触发配对中, 稍后重试... ('+(e.message||e)+')');
+        await new Promise(r=>setTimeout(r, 2500));
+      } else {
+        throw e;
+      }
+    }
+  }
+}
+
 async function connectBLE(){
   if (!navigator.bluetooth){
     alert('当前浏览器不支持 Web Bluetooth\n请使用 Chrome/Edge,并通过 HTTPS 或 localhost 访问');
@@ -810,7 +856,7 @@ async function connectBLE(){
     txChr = await svc.getCharacteristic(TX_UUID);
     try { otaChr = await svc.getCharacteristic(OTA_UUID); } catch(e){ otaChr=null; logW('OTA 特征未找到'); }
     try { dlChr = await svc.getCharacteristic(DL_UUID); } catch(e){ dlChr=null; logW('下载特征未找到'); }
-    await txChr.startNotifications();
+    await startNotificationsWithPairing(txChr);
     txChr.addEventListener('characteristicvaluechanged', onNotify);
     setConnUI(true);
     otaRefreshUI();
@@ -908,7 +954,7 @@ function call(op, path, extra={}){
     const data = new TextEncoder().encode(json);
     gattSerialize(async ()=>{
       try{
-        const chunk = 180;
+        const chunk = 244;
         for (let i=0; i<data.length; i+=chunk){
           const slice = data.slice(i, i+chunk);
           await (rxChr.writeValueWithoutResponse
@@ -969,7 +1015,7 @@ function otaCall(cmd, extra={}){
     const data = new TextEncoder().encode(json);
     gattSerialize(async ()=>{
       try{
-        const chunk = 180;
+        const chunk = 244;
         for (let i=0;i<data.length;i+=chunk)
           await (rxChr.writeValueWithoutResponse ? rxChr.writeValueWithoutResponse(data.slice(i,i+chunk)) : rxChr.writeValue(data.slice(i,i+chunk)));
       }catch(e){ if (otaPending.has(id)){ otaPending.delete(id); rej(e.message||e); } }
@@ -1029,6 +1075,14 @@ function renderTele(d){
   const bv=(d.bus.v/1000), bi=(d.bus.i/1000), bp=(d.bus.p/1000);
   // 使用 BUS 实时功率显示输出功率（W）
   $('pwr-val').textContent = bp.toFixed(1);
+  // scr1 逻辑: sw_reg0x1d 端口状态指示
+  const sw = d.sw_1d | 0;
+  let pwrState;
+  if (sw & 0x40) pwrState = 'INPUT';                    // bit6: C1 sink(输入端)
+  else if (sw & 0x80 || sw & 0x08) pwrState = 'OUTPUT'; // bit7 C1 source / bit3 A1口(输出端)
+  else if (sw & 0x04) pwrState = 'LED';                  // bit2: A2口(照明端)
+  else pwrState = 'IDLE';
+  $('pwr-state').textContent = pwrState;
   const av=(d.bat.v/1000), ai=(d.bat.i/1000), ap=(d.bat.p/1000);
   $('bus-vi').textContent = bv.toFixed(3)+'V / '+bi.toFixed(3)+'A';
   $('bat-vi').textContent = av.toFixed(3)+'V / '+ai.toFixed(3)+'A';
@@ -1608,13 +1662,6 @@ $('btn-ota-fmt').onclick = async ()=>{
 };
 
 // theme toggle
-$('btn-theme').onclick = ()=>{
-  const dark = document.documentElement.dataset.theme !== 'light';
-  document.documentElement.dataset.theme = dark ? 'light' : 'dark';
-  $('btn-theme').textContent = dark ? '☀️' : '🌙';
-  drawChart();
-};
-
 /* logo 长按 -> 密码管理弹窗(PW.设置 / PWC.清除, 设备端校验) */
 (function(){
   const logo = $('logo');
@@ -1680,12 +1727,12 @@ drawChart();
 /* ===================== DATA · log_store 数据回放 ===================== */
 (() => {
   const CATS = [
-    { id:'voltage', label:'电压', unit:'mV',  defAxis:'L', color:'#22e6ff', series:[{k:'bus_v',l:'BUS'},{k:'bat_v',l:'BAT'}] },
-    { id:'current', label:'电流', unit:'mA',  defAxis:'L', color:'#78dc52', series:[{k:'bus_i',l:'BUS'},{k:'bat_i',l:'BAT'}] },
-    { id:'power',   label:'功率', unit:'W',   defAxis:'R', color:'#ffd166', series:[{k:'bus_p',l:'BUS'},{k:'bat_p',l:'BAT'}] },
-    { id:'soc',     label:'电量', unit:'%',   defAxis:'R', color:'#b48cff', series:[{k:'cap_soc',l:'CAP'}] },
-    { id:'temp',    label:'温度', unit:'°C',  defAxis:'R', color:'#ff8a5c', series:[{k:'t_led',l:'LED'},{k:'t_m1',l:'M1'},{k:'t_m2',l:'M2'},{k:'t_b1',l:'B1'},{k:'t_b2',l:'B2'}] },
-    { id:'fan',     label:'风扇', unit:'rpm', defAxis:'R', color:'#66d9ff', series:[{k:'fan',l:'FAN'}] },
+    { id:'voltage', label:'电压', unit:'V',  defAxis:'L', color:'#0ea5e9', decimals:3, series:[{k:'bus_v',l:'母线电压'},{k:'bat_v',l:'电池电压'}] },
+    { id:'current', label:'电流', unit:'A',  defAxis:'L', color:'#22c55e', decimals:3, series:[{k:'bus_i',l:'母线电流'},{k:'bat_i',l:'电池电流'}] },
+    { id:'power',   label:'功率', unit:'W',   defAxis:'R', color:'#f59e0b', decimals:3, series:[{k:'bus_p',l:'母线功率'},{k:'bat_p',l:'电池功率'}] },
+    { id:'soc',     label:'电量', unit:'%',   defAxis:'R', color:'#8b5cf6', decimals:1, series:[{k:'cap_soc',l:'电量'}] },
+    { id:'temp',    label:'温度', unit:'°C',  defAxis:'R', color:'#f97316', decimals:0, series:[{k:'t_led',l:'LED温度'},{k:'t_m1',l:'MOS1温度'},{k:'t_m2',l:'MOS2温度'},{k:'t_b1',l:'电池1温度'},{k:'t_b2',l:'电池2温度'}] },
+    { id:'fan',     label:'风扇', unit:'rpm', defAxis:'R', color:'#06b6d4', decimals:0, series:[{k:'fan',l:'风扇转速'}] },
   ];
   const EVENTS = [
     { bit:0, label:'过热',   color:'rgba(255,60,60,.20)' },
@@ -1695,9 +1742,8 @@ drawChart();
   ];
 
   const $ = id => document.getElementById(id);
-  const canvas = $('data-chart');
-  const ctx = canvas.getContext('2d');
-  const DPR = Math.min(window.devicePixelRatio || 1, 2);
+  const chartHost = $('data-chart-container');
+  let chart = null;
 
   let cfg = {};
   try { cfg = JSON.parse(localStorage.getItem('zhp2dDataCfg')) || {}; } catch(e){ cfg = {}; }
@@ -1705,14 +1751,30 @@ drawChart();
   const saveCfg = () => localStorage.setItem('zhp2dDataCfg', JSON.stringify(cfg));
 
   let files = [], sel = new Set(), loading = false;
-  const D = { t:[], mono:[], bus_v:[], bus_i:[], bus_p:[], bat_v:[], bat_i:[], bat_p:[], soc:[], cap_soc:[], t_led:[], t_m1:[], t_m2:[], t_b1:[], t_b2:[], flags:[], fan:[] };
+  const D = { mono:[], t:[], epoch_off:[], bus_v:[], bus_i:[], bus_p:[], bat_v:[], bat_i:[], bat_p:[], soc:[], cap_soc:[], t_led:[], t_m1:[], t_m2:[], t_b1:[], t_b2:[], flags:[], fan:[] };
   let boots = [];                 /* [{i0,i1,seq}] */
-  let view = { i0:0, i1:0 };
   let cursor = -1, hover = -1;
   let playing = false, speed = 1, lastTs = 0, raf = null;
+  let currentBoot = 0;            /* 当前显示的开机段索引 */
+  let sessionTimeMode = 'relative'; /* 当前开机段时间模式: absolute=真实时间 | relative=开机秒数 */
+  let sessionT = [];              /* 当前开机段显示时间(索引=记录索引) */
+  let sessionRange = { i0:0, i1:0 };  /* 当前开机段记录范围 */
 
-  const getVal = (k, i) => (k === 'bus_p' || k === 'bat_p') ? D[k][i] / 1000 : D[k][i];
-  const fmtT = s => { if (!s || s <= 0) return '--:--:--'; const d = new Date(s*1000), p = n => String(n).padStart(2,'0'); return p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds()); };
+  const getVal = (k, i) => { const raw = D[k][i]; if (raw == null || Number.isNaN(raw)) return null; if (k === 'bus_v' || k === 'bat_v' || k === 'bus_i' || k === 'bat_i' || k === 'bus_p' || k === 'bat_p') return raw / 1000; return raw; };
+  const pad2 = n => String(n).padStart(2,'0');
+  /* 时间显示: absolute 显示真实钟表, relative 显示相对经过时长 */
+  const fmtT = s => {
+    if (s == null || s < 0) return '--:--:--';
+    if (sessionTimeMode === 'relative') return Math.round(s) + 's';
+    const d = new Date(s*1000);
+    return pad2(d.getHours())+':'+pad2(d.getMinutes())+':'+pad2(d.getSeconds());
+  };
+  const fmtFull = s => {
+    if (s == null || s < 0) return '--';
+    if (sessionTimeMode === 'relative') return '开机+' + Math.round(s) + 's';
+    const d = new Date(s*1000);
+    return (d.getMonth()+1)+'-'+pad2(d.getDate())+' '+pad2(d.getHours())+':'+pad2(d.getMinutes())+':'+pad2(d.getSeconds());
+  };
   const fmtDur = s => { const h = Math.floor(s/3600), m = Math.floor(s%3600/60); return (h ? h+'h' : '') + m + 'm'; };
 
   /* ---------------- 文件列表 ---------------- */
@@ -1721,35 +1783,98 @@ drawChart();
     try {
       const r = await call('get', 'logs/list');
       files = r.files || [];
+      /* 按 start_mono 降序排列(最新在前) */
+      files.sort((a,b) => (b.start_mono||0) - (a.start_mono||0));
       renderFiles();
-      $('data-status').textContent = files.length ? ('共 ' + files.length + ' 个文件（环形最近约8小时）') : '无日志文件';
+      $('data-status').textContent = files.length ? ('共 ' + files.length + ' 个文件 · 最新在前') : '无日志文件';
     } catch(e){ $('data-status').textContent = '列表失败: ' + e; logE('logs/list: ' + e); }
   }
   function renderFiles(){
     const host = $('data-files'); host.innerHTML = '';
-    files.forEach(f => {
+    files.forEach((f, fi) => {
       const row = document.createElement('label');
       row.className = 'data-file' + (sel.has(f.name) ? ' on' : '');
       const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = sel.has(f.name);
       cb.onchange = () => { cb.checked ? sel.add(f.name) : sel.delete(f.name); row.classList.toggle('on', cb.checked); };
       row.appendChild(cb);
-      const nm = document.createElement('span'); nm.className = 'fname'; nm.textContent = f.name;
+      const nm = document.createElement('span'); nm.className = 'fname'; nm.textContent = f.name.replace('.bin','');
       const mt = document.createElement('span'); mt.className = 'fmeta';
-      mt.textContent = 'seq ' + f.seq + ' · ' + f.records + '条 · ' + (f.size/1024).toFixed(0) + 'KB';
+      const hrs = f.records ? (f.records/3600).toFixed(1) + 'h' : '0h';
+      mt.textContent = '#' + (fi+1) + ' · ' + hrs + ' · ' + f.records + '条 · ' + (f.size/1024).toFixed(0) + 'KB';
       row.appendChild(nm); row.appendChild(mt);
       host.appendChild(row);
     });
   }
 
-  /* ---------------- 加载 ---------------- */
+  /* ---------------- 加载(统一记录入口) ---------------- */
+  /* 记录统一入口: mono(单调) + epoch_off(对时偏移) + 各测量字段。
+   * 双路径(二进制流/JSON 分页)都调 pushRecord, 产出统一 D 结构 */
+  function pushRecord(mono, epoch_off, bus_v, bus_i, bus_p, bat_v, bat_i, bat_p, soc, cap_soc, t_led, t_m1, t_m2, t_b1, t_b2, flags, fan) {
+    D.mono.push(mono);
+    D.epoch_off.push(epoch_off);
+    D.t.push(0);
+    D.bus_v.push(bus_v); D.bus_i.push(bus_i); D.bus_p.push(bus_p);
+    D.bat_v.push(bat_v); D.bat_i.push(bat_i); D.bat_p.push(bat_p);
+    D.soc.push(soc); D.cap_soc.push(cap_soc);
+    D.t_led.push(t_led); D.t_m1.push(t_m1); D.t_m2.push(t_m2); D.t_b1.push(t_b1); D.t_b2.push(t_b2);
+    D.flags.push(flags); D.fan.push(fan);
+  }
+  /* 加载完成后: 按 mono 升序重排 + 计算开机段 + 计算当前段显示时间 */
+  function finalizeData(){
+    const n = D.mono.length;
+    if (n > 1) {
+      const idx = Array.from({length:n}, (_,i)=>i);
+      idx.sort((a,b)=>D.mono[a]-D.mono[b]);
+      const keys = ['mono','t','epoch_off','bus_v','bus_i','bus_p','bat_v','bat_i','bat_p','soc','cap_soc','t_led','t_m1','t_m2','t_b1','t_b2','flags','fan'];
+      for (const k of keys) {
+        const src = D[k], dst = new Array(n);
+        for (let i=0;i<n;i++) dst[i] = src[idx[i]];
+        D[k] = dst;
+      }
+    }
+    computeBoots();
+    currentBoot = 0;
+    computeSession();
+  }
+  /* 计算当前开机段的显示时间:
+   *   - 该段内有对时(epoch_off!=0) → 用真实时间(mono + 该段 epoch_off)
+   *   - 无对时 → 用开机秒数(uptime = mono & 0xFFFFF)
+   * sessionT 按记录索引填充(仅当前段有效)。 */
+  /* 判断某开机段是否"本次开机内对时": 找非0且非陈旧(超前>1天=上次对时残留的伪时间)的 epoch_off */
+  function getBootEpochOff(i0, i1) {
+    const now = Date.now() / 1000;
+    for (let i = i0; i <= i1; i++) {
+      if (D.epoch_off[i] !== 0) {
+        const rt = D.mono[i] + D.epoch_off[i];
+        if (rt < now + 86400) return D.epoch_off[i];  /* 合理时间(未超前1天) */
+      }
+    }
+    return 0;  /* 未对时或陈旧 */
+  }
+  function computeSession(){
+    const b = boots[currentBoot];
+    if (!b) { sessionT = []; sessionRange = { i0:0, i1:0 }; sessionTimeMode = 'relative'; return sessionRange; }
+    const i0 = b.i0, i1 = Math.min(b.i1, D.mono.length - 1);
+    const off = getBootEpochOff(i0, i1);
+    sessionT = new Array(D.mono.length);
+    if (off !== 0) {
+      sessionTimeMode = 'absolute';
+      for (let i = i0; i <= i1; i++) sessionT[i] = D.mono[i] + off;
+    } else {
+      sessionTimeMode = 'relative';
+      for (let i = i0; i <= i1; i++) sessionT[i] = D.mono[i] & 0xFFFFF;
+    }
+    sessionRange = { i0, i1 };
+    return sessionRange;
+  }
   /* ===================== log_store 二进制下载流 =====================
    * 块格式(小端): [seq u16][count u16][count*38B 记录][crc16 u16]
-   * 结束块 seq=0xFFFF, count=0; 记录 38B 布局见 parseDlRecord
-   * 必须放在本闭包内: parseDlRecord 访问 D 数组(顶层无此变量, 曾致
-   * ReferenceError -> 收满 60s 超时且零数据) */
+   * 结束块 seq=0xFFFF, count=0; 记录 38B 布局见 parseDlRecord */
   let dlBuf = new Uint8Array(0);
   let dlResolve = null, dlReject = null, dlExpect = 0, dlErr = null;
   let dlArm = null;   /* 收到数据时重置停滞超时 */
+  let dlStatusTs = 0; /* 下载进度显示节流 */
+  let totalRecords = 0;   /* 本次加载总记录数(进度条) */
 
   function crc16ccitt(bytes){
     let c = 0xFFFF;
@@ -1762,16 +1887,14 @@ drawChart();
   }
   function parseDlRecord(u8, base){
     const dv = new DataView(u8.buffer, u8.byteOffset + base, 38);
-    const mono = dv.getUint32(0, true);
-    D.t.push(mono + dv.getInt32(4, true)); D.mono.push(mono);
-    D.bus_v.push(dv.getUint16(8, true));  D.bus_i.push(dv.getInt16(10, true));
-    D.bus_p.push(dv.getUint32(12, true));
-    D.bat_v.push(dv.getUint16(16, true)); D.bat_i.push(dv.getInt16(18, true));
-    D.bat_p.push(dv.getUint32(20, true));
-    D.soc.push(dv.getUint8(24));          D.cap_soc.push(dv.getFloat32(25, true));
-    D.t_led.push(dv.getInt8(29)); D.t_m1.push(dv.getInt8(30)); D.t_m2.push(dv.getInt8(31));
-    D.t_b1.push(dv.getInt8(32));  D.t_b2.push(dv.getInt8(33));
-    D.flags.push(dv.getUint8(34));        D.fan.push(dv.getUint16(35, true));
+    pushRecord(
+      dv.getUint32(0, true), dv.getInt32(4, true),
+      dv.getUint16(8, true), dv.getInt16(10, true), dv.getUint32(12, true),
+      dv.getUint16(16, true), dv.getInt16(18, true), dv.getUint32(20, true),
+      dv.getUint8(24), dv.getFloat32(25, true),
+      dv.getInt8(29), dv.getInt8(30), dv.getInt8(31), dv.getInt8(32), dv.getInt8(33),
+      dv.getUint8(34), dv.getUint16(35, true)
+    );
   }
   function onDlNotify(e){
     if (dlArm) dlArm();   /* 任何数据都视为流存活, 重置停滞超时 */
@@ -1803,16 +1926,20 @@ drawChart();
       } else logW('下载块 CRC 错误 seq=' + seq);
       dlExpect = seq + 1;
       dlBuf = dlBuf.slice(need);
-      const st = document.getElementById('data-status');
-      if (st && st.textContent.startsWith('下载')) st.textContent = '下载中... 已 ' + D.t.length + ' 条';
+      const now = Date.now();
+      if (now - dlStatusTs > 30) {
+        dlStatusTs = now;
+        const st = document.getElementById('data-status');
+        if (st && st.textContent.startsWith('下载')) st.textContent = '下载中... 已 ' + D.t.length + ' 条';
+        if (totalRecords > 0) setProgress(D.t.length / totalRecords * 100);
+      }
     }
   }
-  /* 下载单个文件: 触发设备端流式推送, 等待结束块(停滞 20s 无数据才超时) */
   function downloadFile(name){
     return new Promise(async (res, rej) => {
       dlBuf = new Uint8Array(0); dlExpect = 0; dlErr = null;
       let to = null;
-      const arm = () => { if (to) clearTimeout(to); to = setTimeout(() => { const r = dlReject; dlReject = null; if (r) r('下载超时'); }, 20000); };
+      const arm = () => { if (to) clearTimeout(to); to = setTimeout(() => { const r = dlReject; dlReject = null; if (r) r('下载超时'); }, 60000); };
       const done = () => { if (to) clearTimeout(to); res(); };
       const fail = e => { if (to) clearTimeout(to); rej(e); };
       dlResolve = done; dlReject = fail; dlArm = arm;
@@ -1827,47 +1954,58 @@ drawChart();
   }
   window.__zhp2dDl = { onNotify: onDlNotify, reset: dlReset };
 
+  function setProgress(pct){
+    const bar = $('data-progress');
+    const fill = $('data-progress-fill');
+    if (bar && fill){
+      bar.style.display = 'block';
+      fill.style.width = Math.min(100, Math.max(0, pct)) + '%';
+    }
+  }
+
   async function loadSelected(){
-    const names = files.filter(f => sel.has(f.name)).sort((a,b) => a.seq - b.seq).map(f => f.name);
+    const selFiles = files.filter(f => sel.has(f.name)).sort((a,b) => (a.start_mono||0) - (b.start_mono||0));
+    const names = selFiles.map(f => f.name);
     if (!names.length){ $('data-status').textContent = '请先勾选文件'; return; }
     if (loading) return;
     loading = true;
     stopPlay();
     Object.values(D).forEach(a => a.length = 0);
     boots = []; cursor = -1; hover = -1;
+    totalRecords = selFiles.reduce((s, f) => s + (f.records || 0), 0);
+    setProgress(0);
     try {
       for (let fi = 0; fi < names.length; fi++){
         const name = names[fi];
         if (dlChr){
-          $('data-status').textContent = '下载 ' + name + ' · 文件 ' + (fi+1) + '/' + names.length + ' · 已 ' + D.t.length + ' 条';
+          $('data-status').textContent = '下载中... 已 ' + D.t.length + ' 条';
           await downloadFile(name);
           continue;
         }
         let off = 0, guard = 0;
         while (true){
-          $('data-status').textContent = '加载 ' + name + ' · 文件 ' + (fi+1) + '/' + names.length + ' · 已 ' + D.t.length + ' 条';
+          $('data-status').textContent = '加载中... 已 ' + D.t.length + ' 条';
           const r = await call('get', 'logs/read', { name, offset: off, count: 200 });
           const rows = r.records || [];
           if (!rows.length) break;
           for (const row of rows){
-            D.t.push(row[0] || 0); D.mono.push(row[1] || 0);
-            D.bus_v.push(row[2]); D.bus_i.push(row[3]); D.bus_p.push(row[4]);
-            D.bat_v.push(row[5]); D.bat_i.push(row[6]); D.bat_p.push(row[7]);
-            D.soc.push(row[8]); D.cap_soc.push(row[9]);
-            D.t_led.push(row[10]); D.t_m1.push(row[11]); D.t_m2.push(row[12]);
-            D.t_b1.push(row[13]); D.t_b2.push(row[14]);
-            D.flags.push(row[15]); D.fan.push(row[16]);
+            const mono = row[1] || 0;
+            const epoch = row[0] || 0;
+            const epoch_off = epoch !== 0 ? epoch - mono : 0;
+            pushRecord(mono, epoch_off, row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], row[12], row[13], row[14], row[15], row[16]);
           }
           off += 200;
+          if (totalRecords > 0) setProgress(D.t.length / totalRecords * 100);
           if (++guard > 40) break;
         }
       }
-      computeBoots();
-      view.i0 = 0; view.i1 = Math.max(0, D.t.length - 1);
-      $('data-status').textContent = '加载完成 ' + D.t.length + ' 条（断开蓝牙仍可回放）';
-      renderPanel(); renderBoots(); draw(); renderReadings(); renderStats();
+      finalizeData();
+      $('data-status').textContent = '加载完成 ' + D.mono.length + ' 条 · ' + boots.length + ' 次开机（断开蓝牙仍可回放）';
+      renderPanel(); renderBoots(); createChart(); renderReadings(); renderStats();
     } catch(e){ $('data-status').textContent = '加载失败: ' + e; logE('logs/read: ' + e); }
     loading = false;
+    setProgress(100);
+    setTimeout(() => { const bar = $('data-progress'); if (bar) bar.style.display = 'none'; }, 600);
   }
   function computeBoots(){
     boots = [];
@@ -1881,23 +2019,26 @@ drawChart();
     }
   }
 
-  /* ---------------- 面板(分类/轴/颜色) ---------------- */
+  /* ---------------- 面板(图例+轴分配+颜色) ---------------- */
   function renderPanel(){
     const host = $('data-panel'); host.innerHTML = '';
     CATS.forEach(c => {
       const cc = catCfg(c);
       const row = document.createElement('div'); row.className = 'data-cat';
       const ci = document.createElement('input'); ci.type = 'color'; ci.value = cc.color;
-      ci.onchange = () => { cc.color = ci.value; saveCfg(); draw(); };
+      ci.onchange = () => { cc.color = ci.value; saveCfg(); createChart(); };
       const nm = document.createElement('span'); nm.className = 'cname'; nm.textContent = c.label;
       const un = document.createElement('span'); un.className = 'cunit'; un.textContent = c.unit;
       const ax = document.createElement('span'); ax.className = 'axis';
-      [['L','左轴'],['R','右轴'],['H','隐藏']].forEach(([v, t]) => {
-        const b = document.createElement('button'); b.textContent = t;
-        b.className = cc.axis === v ? 'on' : '';
-        b.onclick = () => { cc.axis = v; saveCfg(); renderPanel(); draw(); };
-        ax.appendChild(b);
-      });
+      const show = cc.axis !== 'H';
+      row.classList.toggle('off', !show);
+      const sw = document.createElement('label'); sw.className = 'switch';
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = show;
+      cb.onchange = () => { cc.axis = cb.checked ? c.defAxis : 'H'; saveCfg(); createChart(); };
+      sw.appendChild(cb);
+      const slider = document.createElement('span'); slider.className = 'slider';
+      sw.appendChild(slider);
+      ax.appendChild(sw);
       row.appendChild(ci); row.appendChild(nm); row.appendChild(un); row.appendChild(ax);
       host.appendChild(row);
     });
@@ -1905,214 +2046,226 @@ drawChart();
   function renderBoots(){
     const host = $('data-boots'); host.innerHTML = '';
     boots.forEach((b, bi) => {
-      const t0 = D.t[b.i0];
-      const t1 = D.t[Math.min(b.i1, D.t.length-1)];
+      const i0 = b.i0, i1 = Math.min(b.i1, D.mono.length-1);
+      const off = getBootEpochOff(i0, i1);
+      let label;
+      if (off !== 0) {
+        /* 有对时: 开机#N mm-dd hh:mm */
+        const d = new Date((D.mono[i0] + off) * 1000);
+        label = '开机#' + (bi+1) + ' ' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate()) + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+      } else {
+        /* 无对时: 开机#N X分钟 */
+        const t0 = D.mono[i0] & 0xFFFFF, t1 = D.mono[i1] & 0xFFFFF;
+        const mins = Math.max(1, Math.round((t1 - t0) / 60));
+        label = '开机#' + (bi+1) + ' ' + (mins < 60 ? mins + '分钟' : Math.floor(mins/60) + '小时' + (mins%60 ? mins%60 + '分钟' : ''));
+      }
       const btn = document.createElement('button');
-      btn.textContent = '开机#' + (bi+1) + ' ' + fmtT(t0) + ' · ' + fmtDur(Math.max(0, t1 - t0));
-      btn.onclick = () => { view.i0 = b.i0; view.i1 = Math.min(b.i1, D.t.length-1); draw(); renderStats(); };
+      btn.className = bi === currentBoot ? 'on' : '';
+      btn.textContent = label;
+      btn.onclick = () => {
+        stopPlay();
+        currentBoot = bi;
+        computeSession();
+        createChart();
+        renderBoots();
+        renderReadings();
+        renderStats();
+      };
       host.appendChild(btn);
     });
   }
 
-  /* ---------------- 图表 ---------------- */
-  function resizeCanvas(){
-    const r = canvas.getBoundingClientRect();
-    canvas.width = Math.max(1, Math.floor(r.width * DPR));
-    canvas.height = Math.max(1, Math.floor(r.height * DPR));
-    draw();
+  /* ---------------- 图表 (ECharts) ---------------- */
+  function buildSessionData(k, unit, dash, decimals, i0, i1) {
+    const n = i1 - i0 + 1;
+    const data = new Array(n);
+    for (let i = i0; i <= i1; i++) {
+      const x = sessionTimeMode === 'absolute' ? sessionT[i] * 1000 : sessionT[i];
+      const v = getVal(k, i);
+      data[i - i0] = { value: [x, v], unit: unit, dash: dash, decimals: decimals };
+    }
+    return data;
   }
-  function yRange(axis){
-    let mn = Infinity, mx = -Infinity;
-    for (const c of CATS){
-      const cc = catCfg(c);
-      if (cc.axis !== axis) continue;
-      for (const s of c.series){
-        for (let i = view.i0; i <= view.i1; i++){
-          const v = getVal(s.k, i);
-          if (isFinite(v)){ if (v < mn) mn = v; if (v > mx) mx = v; }
-        }
-      }
-    }
-    if (!isFinite(mn)) { mn = 0; mx = 1; }
-    if (mn === mx){ mn -= 1; mx += 1; }
-    const pad = (mx - mn) * 0.1;
-    return { mn: mn - pad, mx: mx + pad };
-  }
-  function draw(){
-    const W = canvas.width, H = canvas.height;
-    ctx.clearRect(0, 0, W, H);
-    const n = D.t.length;
-    const P = { l: 44, r: 48, t: 14, b: 24 };
-    const pw = W - P.l - P.r, ph = H - P.t - P.b;
-    if (n < 2 || view.i1 <= view.i0){
-      ctx.fillStyle = 'rgba(139,151,167,.5)';
-      ctx.font = '12px sans-serif';
-      ctx.fillText(n ? '数据范围过小' : '未加载数据', P.l + 10, P.t + 20);
-      return;
-    }
-    const iw = view.i1 - view.i0;
-    const xOf = i => P.l + (i - view.i0) / iw * pw;
-    const YL = yRange('L'), YR = yRange('R');
-    const yOfL = v => P.t + (YL.mx - v) / (YL.mx - YL.mn) * ph;
-    const yOfR = v => P.t + (YR.mx - v) / (YR.mx - YR.mn) * ph;
-    const leftOn = CATS.some(c => catCfg(c).axis === 'L');
-    const rightOn = CATS.some(c => catCfg(c).axis === 'R');
 
-    /* 网格 + 轴标签 */
-    ctx.strokeStyle = 'rgba(255,255,255,.06)';
-    ctx.fillStyle = 'rgba(139,151,167,.9)';
-    ctx.font = '10px monospace';
-    ctx.lineWidth = 1;
-    for (let g = 0; g <= 4; g++){
-      const y = P.t + ph * g / 4;
-      ctx.beginPath(); ctx.moveTo(P.l, y); ctx.lineTo(W - P.r, y); ctx.stroke();
-      if (leftOn){ const v = YL.mx - (YL.mx - YL.mn) * g / 4; ctx.fillText(v.toFixed(0), 2, y + 3); }
-      if (rightOn){ const v = YR.mx - (YR.mx - YR.mn) * g / 4; ctx.fillText(v.toFixed(0), W - P.r + 4, y + 3); }
-    }
-    for (let g = 0; g <= 4; g++){
-      const i = Math.round(view.i0 + iw * g / 4);
-      const x = xOf(i);
-      ctx.beginPath(); ctx.moveTo(x, P.t); ctx.lineTo(x, P.t + ph); ctx.stroke();
-      ctx.fillText(fmtT(D.t[i]), x - 24, H - 8);
-    }
-    /* 轴单位标注 */
-    const lu = CATS.find(c => catCfg(c).axis === 'L');
-    const ru = CATS.find(c => catCfg(c).axis === 'R');
-    ctx.font = '10px sans-serif';
-    if (lu) ctx.fillText(lu.label + '(' + lu.unit + ')', 2, P.t + 10);
-    if (ru) ctx.fillText(ru.label + '(' + ru.unit + ')', W - P.r + 4, P.t + 10);
+  function createChart() {
+    if (chart) { try { chart.dispose(); } catch(e){} chart = null; }
+    if (D.mono.length < 2 || !boots.length) { logW('createChart: 无数据'); return; }
 
-    /* 事件带 */
-    for (const ev of EVENTS){
-      ctx.fillStyle = ev.color;
-      let run = -1;
-      for (let i = view.i0; i <= view.i1 + 1; i++){
-        const on = i <= view.i1 && (D.flags[i] & (1 << ev.bit));
-        if (on && run < 0) run = i;
-        if (!on && run >= 0){
-          ctx.fillRect(xOf(run), P.t, xOf(i-1) - xOf(run), ph);
-          run = -1;
-        }
-      }
-    }
-    /* 睡眠空洞(boot边界且时间跳变>5s) 灰带 */
-    for (const b of boots){
-      if (b.i0 > 0 && b.i0 >= view.i0 && b.i0 <= view.i1 + 1){
-        const dt = D.t[b.i0] - D.t[b.i0-1];
-        if (dt > 5){
-          ctx.fillStyle = 'rgba(120,120,140,.25)';
-          const x = xOf(b.i0);
-          ctx.fillRect(x - 2, P.t, 4, ph);
-        }
-      }
-    }
-    /* 开机虚线 */
-    ctx.strokeStyle = 'rgba(180,140,255,.55)';
-    ctx.setLineDash([4,4]);
-    ctx.fillStyle = 'rgba(180,140,255,.9)';
-    ctx.font = '10px sans-serif';
-    for (const b of boots){
-      if (b.i0 >= view.i0 && b.i0 <= view.i1){
-        const x = xOf(b.i0);
-        ctx.beginPath(); ctx.moveTo(x, P.t); ctx.lineTo(x, P.t + ph); ctx.stroke();
-        ctx.fillText('开机', x + 3, P.t + 10);
-      }
-    }
-    ctx.setLineDash([]);
+    const s = computeSession();
+    const i0 = s.i0, i1 = s.i1;
+    if (i1 <= i0) { logW('createChart: 开机段数据过少'); return; }
 
-    /* 曲线 */
-    for (const c of CATS){
+    const hasL = CATS.some(c => catCfg(c).axis === 'L');
+    const hasR = CATS.some(c => catCfg(c).axis === 'R');
+    if (!hasL && !hasR) { logW('createChart: 无可显示系列'); return; }
+
+    const rect = chartHost.getBoundingClientRect();
+    const w = Math.max(1, Math.floor(rect.width));
+    const h = Math.max(1, Math.floor(rect.height));
+    if (w <= 1 || h <= 1) { logW('createChart: 容器尺寸 0, 延迟重试'); setTimeout(() => { if (D.mono.length >= 2) createChart(); }, 100); return; }
+
+    /* 主题感知颜色: 亮色主题下用深色网格/文字 */
+    const light = document.documentElement.dataset.theme === 'light';
+    const gridC = light ? 'rgba(0,0,0,.08)' : 'rgba(255,255,255,.08)';
+    const axisC = light ? 'rgba(40,60,100,.85)' : 'rgba(139,151,167,.9)';
+    const axisLineC = light ? 'rgba(40,60,100,.4)' : 'rgba(139,151,167,.6)';
+    const cursorC = light ? 'rgba(0,0,0,.3)' : 'rgba(255,255,255,.4)';
+    const dzBgC = light ? 'rgba(0,0,0,.06)' : 'rgba(16,26,48,.6)';
+
+    /* 多 Y 轴: 每个数据类型一个独立轴(独立刻度), 同侧用 offset 叠加(参考 CSDN 多y轴配置) */
+    const lCats = CATS.filter(c => catCfg(c).axis === 'L');
+    const rCats = CATS.filter(c => catCfg(c).axis === 'R');
+    const AXIS_GAP = 32;   /* 同侧相邻轴的像素间距(收窄) */
+    const yAxis = [];
+    const axisIdx = {};    /* 类别 id → yAxis 索引 */
+    lCats.forEach((c, i) => {
+      axisIdx[c.id] = yAxis.length;
+      yAxis.push({
+        type: 'value', position: 'left', offset: i * AXIS_GAP,
+        axisLabel: { show: false },
+        axisLine: { show: false }, axisTick: { show: false },
+        splitLine: { show: i === 0, lineStyle: { color: gridC } },
+      });
+    });
+    rCats.forEach((c, i) => {
+      axisIdx[c.id] = yAxis.length;
+      yAxis.push({
+        type: 'value', position: 'right', offset: i * AXIS_GAP,
+        axisLabel: { show: false },
+        axisLine: { show: false }, axisTick: { show: false },
+        splitLine: { show: lCats.length === 0 && i === 0, lineStyle: { color: gridC } },
+      });
+    });
+
+    /* 系列(仅当前开机段) */
+    const series = [];
+    for (const c of CATS) {
       const cc = catCfg(c);
       if (cc.axis === 'H') continue;
-      const yOf = cc.axis === 'L' ? yOfL : yOfR;
-      c.series.forEach((s, si) => {
-        ctx.strokeStyle = cc.color;
-        ctx.setLineDash(si === 0 ? [] : [6,4]);
-        ctx.lineWidth = 1.4;
-        ctx.globalAlpha = si === 0 ? 1 : .75;
-        ctx.beginPath();
-        let started = false;
-        for (let i = view.i0; i <= view.i1; i++){
-          const x = xOf(i), y = yOf(getVal(s.k, i));
-          if (!isFinite(y)){ started = false; continue; }
-          if (!started){ ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
-        }
-        ctx.stroke();
-        ctx.globalAlpha = 1;
-        ctx.setLineDash([]);
-      });
-    }
-
-    /* 光标(播放/悬停) */
-    const ci = playing ? cursor : (hover >= 0 ? hover : cursor);
-    if (ci >= view.i0 && ci <= view.i1){
-      const x = xOf(ci);
-      ctx.strokeStyle = 'rgba(255,255,255,.5)';
-      ctx.beginPath(); ctx.moveTo(x, P.t); ctx.lineTo(x, P.t + ph); ctx.stroke();
-      ctx.fillStyle = '#fff';
-      ctx.font = '10px monospace';
-      ctx.fillText(fmtT(D.t[ci]), x + 3, P.t + ph - 6);
-      for (const c of CATS){
-        const cc = catCfg(c);
-        if (cc.axis === 'H') continue;
-        const yOf = cc.axis === 'L' ? yOfL : yOfR;
-        c.series.forEach(s => {
-          const y = yOf(getVal(s.k, ci));
-          if (!isFinite(y)) return;
-          ctx.fillStyle = cc.color;
-          ctx.beginPath(); ctx.arc(x, y, 2.2, 0, Math.PI*2); ctx.fill();
+      for (let si = 0; si < c.series.length; si++) {
+        const s = c.series[si];
+        series.push({
+          name: s.l,
+          type: 'line',
+          color: cc.color,
+          yAxisIndex: axisIdx[c.id],
+          showSymbol: false,
+          animation: false,
+          lineStyle: { width: 2, color: cc.color, type: si === 0 ? 'solid' : 'dashed' },
+          emphasis: { disabled: true },
+          data: buildSessionData(s.k, c.unit, si !== 0, c.decimals, i0, i1),
         });
       }
     }
+
+    /* 事件带 markArea(仅当前开机段) */
+    if (series.length) {
+      const areas = [];
+      for (const ev of EVENTS) {
+        let run = -1;
+        for (let i = i0; i <= i1 + 1; i++) {
+          const on = i <= i1 && (D.flags[i] & (1 << ev.bit));
+          if (on && run < 0) run = i;
+          if (!on && run >= 0) {
+            areas.push([{ xAxis: sessionT[run], yAxis: 'min', itemStyle: { color: ev.color } }, { xAxis: sessionT[i-1], yAxis: 'max' }]);
+            run = -1;
+          }
+        }
+      }
+      if (areas.length) series[0].markArea = { silent: true, data: areas };
+    }
+
+    const isFS = document.fullscreenElement === chartHost;
+    const option = {
+      animation: false,
+      grid: { left: isFS ? 36 : 8, right: isFS ? 36 : 8, top: isFS ? 44 : 34, bottom: isFS ? 72 : 52, containLabel: false },
+      legend: { show: false },
+      tooltip: {
+        trigger: 'axis',
+        triggerOn: 'click',
+        confine: true,
+        axisPointer: { type: 'line', lineStyle: { color: cursorC } },
+        backgroundColor: 'rgba(10,16,32,.95)',
+        borderColor: 'rgba(120,170,255,.3)',
+        textStyle: { color: '#e6f0ff', fontSize: 11 },
+        formatter: params => {
+          if (!params || !params.length) return '';
+          const rx = params[0].value[0];
+          const xSec = sessionTimeMode === 'absolute' ? rx / 1000 : rx;
+          let html = '<b style="color:#22e6ff">' + fmtFull(xSec) + '</b>';
+          for (const p of params) {
+            const v = p.value[1];
+            const unit = (p.data && p.data.unit) || '';
+            const dash = (p.data && p.data.dash) ? 'dashed' : 'solid';
+            const marker = '<span style="display:inline-block;width:14px;height:0;border-top:2px ' + dash + ' ' + p.color + ';vertical-align:middle;"></span>';
+            const dec = (p.data && p.data.decimals != null) ? p.data.decimals : 2;
+            html += '<br/>' + marker + ' ' + p.seriesName + ': <b>' + (v == null ? '--' : Number(v).toFixed(dec) + ' ' + unit) + '</b>';
+          }
+          return html;
+        },
+      },
+      xAxis: {
+        type: sessionTimeMode === 'absolute' ? 'time' : 'value',
+        axisLabel: {
+          color: axisC, fontSize: 11, hideOverlap: true,
+          formatter: sessionTimeMode === 'relative'
+            ? (v) => Math.round(v) + 's'
+            : (v) => { const d = new Date(v); return (d.getHours()<10?'0':'')+d.getHours()+':'+((d.getMinutes()<10?'0':'')+d.getMinutes()); },
+        },
+        axisLine: { lineStyle: { color: axisLineC } },
+        splitLine: { show: false },
+      },
+      yAxis,
+      series,
+      dataZoom: [
+        { type: 'inside', xAxisIndex: 0, filterMode: 'none' },
+        { type: 'slider', xAxisIndex: 0, height: 20, bottom: 6, borderColor: 'rgba(120,170,255,.3)', backgroundColor: dzBgC, fillerColor: 'rgba(34,230,255,.15)', handleStyle: { color: '#22e6ff' }, textStyle: { color: axisC, fontSize: 10 } },
+      ],
+    };
+
+    try {
+      chart = echarts.init(chartHost, null, { renderer: 'canvas', width: w, height: h });
+      chart.setOption(option);
+    } catch (e) {
+      logE('createChart: ECharts 创建失败: ' + (e && e.message ? e.message : e));
+      $('data-status').textContent = '图表创建失败: ' + (e && e.message ? e.message : e);
+      return;
+    }
+
+    /* 点击查看数值 */
+    chart.on('click', params => {
+      if (params && params.dataIndex != null) {
+        hover = i0 + params.dataIndex;
+        renderReadings();
+      }
+    });
+
+    renderStats();
   }
 
-  /* ---------------- 交互 ---------------- */
-  let dragging = null;
-  canvas.addEventListener('wheel', e => {
-    e.preventDefault();
-    if (D.t.length < 2) return;
-    const r = canvas.getBoundingClientRect();
-    const mx = (e.clientX - r.left) / r.width;
-    const center = view.i0 + (view.i1 - view.i0) * mx;
-    const factor = e.deltaY > 0 ? 1.25 : 0.8;
-    let span = Math.max(2, Math.round((view.i1 - view.i0) * factor));
-    view.i0 = Math.max(0, Math.round(center - span * mx));
-    view.i1 = Math.min(D.t.length - 1, view.i0 + span);
-    if (view.i1 <= view.i0) view.i1 = Math.min(D.t.length - 1, view.i0 + 1);
-    draw(); renderStats();
-  }, { passive:false });
-  canvas.addEventListener('mousedown', e => {
-    if (D.t.length < 2) return;
-    dragging = { x: e.clientX, i0: view.i0, i1: view.i1 };
-  });
-  window.addEventListener('mousemove', e => {
-    if (dragging){
-      const r = canvas.getBoundingClientRect();
-      const dx = (e.clientX - dragging.x) / r.width * (dragging.i1 - dragging.i0);
-      let i0 = Math.round(dragging.i0 - dx), i1 = Math.round(dragging.i1 - dx);
-      if (i0 < 0){ i1 -= i0; i0 = 0; }
-      if (i1 > D.t.length - 1){ i0 -= i1 - (D.t.length - 1); i1 = D.t.length - 1; }
-      view.i0 = Math.max(0, i0); view.i1 = Math.min(D.t.length - 1, i1);
-      draw(); renderStats();
-    } else if (!playing && D.t.length){
-      const r = canvas.getBoundingClientRect();
-      if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom){
-        hover = Math.round(view.i0 + (view.i1 - view.i0) * (e.clientX - r.left) / r.width);
-        hover = Math.max(view.i0, Math.min(view.i1, hover));
-        draw(); renderReadings();
-      }
+  function resizeChart() {
+    if (chart) {
+      const rect = chartHost.getBoundingClientRect();
+      const w = Math.max(1, Math.floor(rect.width));
+      const h = Math.max(1, Math.floor(rect.height));
+      const isFS = document.fullscreenElement === chartHost;
+      chart.setOption({
+        grid: { left: isFS ? 24 : 8, right: isFS ? 24 : 8, top: isFS ? 24 : 34, bottom: isFS ? 52 : 52 }
+      });
+      chart.resize({ width: w, height: h });
+    } else if (D.mono.length >= 2) {
+      createChart();
     }
-  });
-  window.addEventListener('mouseup', () => { dragging = null; });
-
-  /* ---------------- 回放 ---------------- */
-  function stopPlay(){ playing = false; if (raf) cancelAnimationFrame(raf); raf = null; $('btn-data-play').textContent = '▶ 播放'; }
-  function togglePlay(){
-    if (D.t.length < 2) return;
-    if (playing){ stopPlay(); return; }
+  }
+/* ---------------- 回放 ---------------- */
+  function stopPlay() { playing = false; if (raf) cancelAnimationFrame(raf); raf = null; $('btn-data-play').textContent = '▶ 播放'; }
+  function togglePlay() {
+    if (D.mono.length < 2) return;
+    if (playing) { stopPlay(); return; }
+    const i0 = sessionRange.i0, i1 = sessionRange.i1;
     playing = true;
     $('btn-data-play').textContent = '⏸ 暂停';
-    if (cursor < view.i0 || cursor > view.i1) cursor = view.i0;
+    if (cursor < i0 || cursor > i1) cursor = i0;
     lastTs = performance.now();
     const step = () => {
       if (!playing) return;
@@ -2120,62 +2273,67 @@ drawChart();
       const dt = (now - lastTs) / 1000;
       lastTs = now;
       cursor += dt * speed;
-      if (cursor > D.t.length - 1){ cursor = D.t.length - 1; stopPlay(); draw(); renderReadings(); return; }
-      const ci = Math.round(cursor);
-      if (ci > view.i1){ const span = view.i1 - view.i0; view.i0 = ci - span; view.i1 = ci; }
-      draw(); renderReadings();
+      if (cursor > i1) { cursor = i1; stopPlay(); renderReadings(); return; }
+      if (chart) {
+        const ci = Math.round(cursor);
+        chart.dispatchAction({ type: 'showTip', seriesIndex: 0, dataIndex: ci - i0 });
+      }
+      renderReadings();
       raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
   }
 
   /* ---------------- 读数/统计/导出 ---------------- */
-  function renderReadings(){
+  function renderReadings() {
     const host = $('data-readings');
     const ci = playing ? Math.round(cursor) : (hover >= 0 ? hover : cursor);
-    if (ci < 0 || ci >= D.t.length){ host.innerHTML = ''; return; }
-    const b = boots.find(b => ci >= b.i0 && ci <= b.i1);
-    let html = '<b style="color:var(--cyan)">' + fmtT(D.t[ci]) + '</b>';
-    if (b) html += ' · 开机#' + (boots.indexOf(b) + 1);
-    for (const c of CATS){
+    if (ci < sessionRange.i0 || ci > sessionRange.i1) { host.innerHTML = ''; return; }
+    let html = '<b style="color:var(--cyan)">' + fmtFull(sessionT[ci]) + '</b>';
+    html += ' · 开机#' + (currentBoot + 1);
+    if (D.epoch_off[ci] === 0) html += ' <span style="color:var(--text-fade)">(未对时)</span>';
+    for (const c of CATS) {
       const cc = catCfg(c);
       if (cc.axis === 'H') continue;
-      const parts = c.series.map(s => s.l + ' ' + getVal(s.k, ci).toFixed(2));
+      const parts = c.series.map(s => s.l + ' ' + getVal(s.k, ci).toFixed(c.decimals));
       html += ' &nbsp;|&nbsp; <span style="color:' + cc.color + '">' + c.label + ':</span> ' + parts.join(' / ') + ' ' + c.unit;
     }
     host.innerHTML = html;
   }
-  function renderStats(){
+  function renderStats() {
     const host = $('data-stats');
-    if (D.t.length < 2 || view.i1 <= view.i0){ host.textContent = ''; return; }
-    const lines = ['范围: ' + fmtT(D.t[view.i0]) + ' ~ ' + fmtT(D.t[view.i1])];
-    for (const c of CATS){
+    if (!chart || D.mono.length < 2 || !boots.length) { host.textContent = ''; return; }
+    const i0 = sessionRange.i0, i1 = sessionRange.i1;
+    if (i1 <= i0) { host.textContent = ''; return; }
+    const lines = ['范围: ' + fmtFull(sessionT[i0]) + ' ~ ' + fmtFull(sessionT[i1]) + ' · 开机#' + (currentBoot + 1)];
+    for (const c of CATS) {
       const cc = catCfg(c);
       if (cc.axis === 'H') continue;
-      for (const s of c.series){
+      for (const s of c.series) {
         let mn = Infinity, mx = -Infinity, sum = 0, cnt = 0;
-        for (let i = view.i0; i <= view.i1; i++){
+        for (let i = i0; i <= i1; i++) {
           const v = getVal(s.k, i);
-          if (isFinite(v)){ if (v < mn) mn = v; if (v > mx) mx = v; sum += v; cnt++; }
+          if (v != null && isFinite(v)) { if (v < mn) mn = v; if (v > mx) mx = v; sum += v; cnt++; }
         }
-        if (cnt) lines.push(c.label + '/' + s.l + ' ' + c.unit + ': min ' + mn.toFixed(1) + ' · max ' + mx.toFixed(1) + ' · avg ' + (sum/cnt).toFixed(1));
+        if (cnt) lines.push(s.l + ' ' + c.unit + ': min ' + mn.toFixed(c.decimals) + ' · max ' + mx.toFixed(c.decimals) + ' · avg ' + (sum / cnt).toFixed(c.decimals));
       }
     }
-    for (const ev of EVENTS){
+    for (const ev of EVENTS) {
       let cnt = 0;
-      for (let i = view.i0; i <= view.i1; i++) if (D.flags[i] & (1 << ev.bit)) cnt++;
+      for (let i = i0; i <= i1; i++) if (D.flags[i] & (1 << ev.bit)) cnt++;
       if (cnt) lines.push('事件 ' + ev.label + ': ' + cnt + ' 次');
     }
     host.textContent = lines.join('\n');
   }
-  function exportCSV(){
-    if (!D.t.length) return;
-    const head = 'epoch,time,mono,bus_v,bus_i,bus_p,bat_v,bat_i,bat_p,soc,cap_soc,t_led,t_m1,t_m2,t_b1,t_b2,flags,fan';
+  function exportCSV() {
+    if (!D.mono.length) return;
+    const head = 'mono,epoch_off,epoch,bus_v,bus_i,bus_p,bat_v,bat_i,bat_p,soc,cap_soc,t_led,t_m1,t_m2,t_b1,t_b2,flags,fan';
     const rows = [];
-    for (let i = 0; i < D.t.length; i++){
-      rows.push([D.t[i], fmtT(D.t[i]), D.mono[i], D.bus_v[i], D.bus_i[i], D.bus_p[i], D.bat_v[i], D.bat_i[i], D.bat_p[i], D.soc[i], D.cap_soc[i], D.t_led[i], D.t_m1[i], D.t_m2[i], D.t_b1[i], D.t_b2[i], D.flags[i], D.fan[i]].join(','));
+    for (let i = 0; i < D.mono.length; i++) {
+      const ep = D.epoch_off[i] !== 0 ? Math.round(D.mono[i] + D.epoch_off[i]) : '';
+      rows.push([D.mono[i], D.epoch_off[i], ep, D.bus_v[i], D.bus_i[i], D.bus_p[i], D.bat_v[i], D.bat_i[i], D.bat_p[i], D.soc[i], D.cap_soc[i], D.t_led[i], D.t_m1[i], D.t_m2[i], D.t_b1[i], D.t_b2[i], D.flags[i], D.fan[i]].join(','));
     }
-    const blob = new Blob([head + '\n' + rows.join('\n')], { type:'text/csv;charset=utf-8' });
+    const blob = new Blob([head + '\n' + rows.join('\n')], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = 'zhp2d_log_' + Date.now() + '.csv';
@@ -2187,23 +2345,48 @@ drawChart();
   /* ---------------- 绑定 ---------------- */
   $('btn-data-refresh').onclick = refreshList;
   $('btn-data-all').onclick = () => {
-    if (files.length && sel.size === files.length){ sel.clear(); }
+    if (files.length && sel.size === files.length) { sel.clear(); }
     else { files.forEach(f => sel.add(f.name)); }
     renderFiles();
   };
   $('btn-data-load').onclick = loadSelected;
   $('btn-data-play').onclick = togglePlay;
-  $('btn-data-prev').onclick = () => { if (D.t.length){ stopPlay(); cursor = view.i0; view.i0 = 0; view.i1 = Math.max(0, D.t.length - 1); draw(); renderReadings(); renderStats(); } };
+  $('btn-data-prev').onclick = () => {
+    if (D.mono.length) {
+      stopPlay();
+      cursor = sessionRange.i0;
+      createChart();
+      renderReadings();
+      renderStats();
+    }
+  };
   $('btn-data-export').onclick = exportCSV;
   $('data-speed').onchange = e => { speed = parseFloat(e.target.value); };
-  window.addEventListener('resize', () => { if ($('view-data').classList.contains('active')) resizeCanvas(); });
+  $('btn-chart-full').onclick = () => {
+    const c = $('data-chart-container');
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else if (c.requestFullscreen) {
+      c.requestFullscreen().catch(e => logW('全屏失败: ' + (e && e.message || e)));
+    }
+  };
+  document.addEventListener('fullscreenchange', () => {
+    const c = $('data-chart-container');
+    const fs = document.fullscreenElement === c;
+    $('btn-chart-full').textContent = fs ? '✕ 退出' : '⛶ 全屏';
+    requestAnimationFrame(() => requestAnimationFrame(() => resizeChart()));
+  });
+  window.addEventListener('resize', () => { if ($('view-data').classList.contains('active')) resizeChart(); });
 
   const origSwitch = switchView;
-  switchView = v => { origSwitch(v); if (v === 'data'){ resizeCanvas(); refreshList(); } };
+  switchView = v => { origSwitch(v); if (v === 'data') { resizeChart(); refreshList(); } };
 
   renderPanel();
-  resizeCanvas();
+
+  /* 主题切换时重绘 DATA 图表 */
+  window.__zhp2dRedrawData = () => { if (D.mono.length >= 2) createChart(); };
 })();
+
 
 </script>
 </body>
