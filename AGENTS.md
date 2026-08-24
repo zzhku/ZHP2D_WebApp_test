@@ -20,3 +20,11 @@
 - 单文件静态站点（无构建系统/框架）；DATA 折线图依赖 ECharts（经 CDN 引入 `echarts.min.js`，断网时该图表不可用，其余功能仍可离线）；改动只在 `index.html`
 - BLE 交互协议跟随固件 `web_dispatch.c` 的 JSON 格式，键名不得自行发明
 - 中文 commit message；与固件改动相关联的提交互相标注
+
+## 更新日志约定
+
+- `CHANGELOG.md` 是 Web 控制台更新日志的**权威源**（随本仓库提交维护）。
+- **每次提交视为一次更新**：一条目对应一次提交，最新在上（与 git log 同序）。
+- **未同步到远程的提交标记为「未发布开发版」**；已推送的用日期作为版本。
+- 三分类：feature=新增 / change=改动 / fix=修复；面向用户语言，无技术名词。
+- 展示副本在 `../ZHP2D_MULTI_LINK/changelog-web.js`，提交后由 Agent 同步。
