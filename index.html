@@ -462,11 +462,10 @@
 #data-chart-container .u-cursor-pt { filter:drop-shadow(0 0 3px rgba(255,255,255,.5)); }
 .data-panel { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:12px; }
 .data-cat { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-dim); padding:6px 7px; border-radius:8px; background:rgba(255,255,255,.02); border:1px solid transparent; }
-.data-cat:hover { border-color:var(--line); }
 .data-cat.off { opacity:0.45; }
 .data-cat input[type=color] { width:26px; height:22px; border:1px solid var(--line-strong); border-radius:6px; background:none; padding:0; cursor:pointer; }
+.data-cat input:focus { outline:none; }
 .data-cat .cname { width:auto; flex-shrink:0; font-weight:600; color:var(--text); }
-.data-cat .cunit { color:var(--text-fade); font-size:10px; width:26px; flex-shrink:0; }
 .data-cat .axis { display:flex; align-items:center; margin-left:auto; }
 .data-cat .axis button { font-size:12px; padding:5px 12px; border:none; background:none; color:var(--text-fade); cursor:pointer; letter-spacing:.05em; min-height:30px; }
 .data-cat .axis button + button { border-left:1px solid var(--line); }
@@ -676,6 +675,7 @@
       <div>RX <span style="color:var(--green)">...cdef1 (Write)</span></div>
       <div>TX <span style="color:var(--green)">...cdef2 (Notify)</span></div>
       <div>OTA <span style="color:var(--cyan)">...cdef3 (Write)</span></div>
+      <div>日志下载 <span style="color:var(--green)">...cdef4 (Notify)</span></div>
       <div style="margin-top:8px;color:var(--text-fade);font-size:10px">支持 Web Bluetooth 的浏览器:Chrome/Edge (HTTPS 或 localhost)</div>
     </div>
   </div>
@@ -1261,7 +1261,7 @@ const SETTING_TREE = [
     { key:'fun_bat_temp_interval', title:'电池温区', ui:'range', min:35, max:50, unit:'度', hidden:{key:'fun_enable', eq:false} },
     { key:'fun_led_temp_interval', title:'LED温区', ui:'range', min:40, max:80, unit:'度', hidden:{key:'fun_enable', eq:false} },
     { key:'fun_stop_when_charger_full', title:'充满关闭风扇', ui:'switch', hidden:{key:'fun_enable', eq:false} },
-    { key:'fun_stop_wait_time', title:'关闭等待时间', ui:'spinbox', min:0, max:120, step:1, unit:'S', hidden:{key:'fun_enable', eq:false} },
+    { key:'fun_stop_wait_time', title:'关闭等待时间', ui:'spinbox', min:0, max:120, step:1, unit:'S', hidden:{key:'fun_stop_when_charger_full', eq:false} },
   ]},
 { title:'充电', children:[
     { key:'temp_control_input_power_default_power', title:'功率上限', ui:'spinbox', min:10, max:100, step:1, unit:'W' },
@@ -1387,7 +1387,7 @@ const SETTING_TREE = [
     { key:'bq_design_cap', title:'设计容量', ui:'spinbox', min:1000, max:9999, step:1, unit:'mAh' },
     { key:'bq_full_cap', title:'充满容量', ui:'label', unit:'mAh' },
     { key:'bq_remain_cap', title:'剩余容量', ui:'label', unit:'mAh' },
-    { key:'bq_design_mwh', title:'设计能量', ui:'spinbox', min:21600, max:74000, step:10, unit:'mWh' },
+    { key:'bq_design_mwh', title:'设计能量', ui:'spinbox', min:7000, max:74000, step:10, unit:'mWh' },
     { key:'bq_full_mwh', title:'充满能量', ui:'label', unit:'mWh' },
     { key:'bq_remain_mwh', title:'剩余能量', ui:'label', unit:'mWh' },
   ]},
@@ -1399,6 +1399,14 @@ const SETTING_TREE = [
     { key:'bq_cell1_v', title:'CELL1电压', ui:'label' },
     { key:'bq_cell2_v', title:'CELL2电压', ui:'label' },
   ]},
+  { title:'直流内阻', children:[
+    { key:'bq_ra_cell1_best', title:'CELL1最佳', ui:'label' },
+    { key:'bq_ra_cell1_worst', title:'CELL1最差', ui:'label' },
+    { key:'bq_ra_cell1_delta', title:'CELL1更新量', ui:'label' },
+    { key:'bq_ra_cell2_best', title:'CELL2最佳', ui:'label' },
+    { key:'bq_ra_cell2_worst', title:'CELL2最差', ui:'label' },
+    { key:'bq_ra_cell2_delta', title:'CELL2更新量', ui:'label' },
+  ]},
   { title:'设备状态数据', children:[
     { key:'bq_safety_alert', title:'安全警报', ui:'label' },
     { key:'bq_safety_status', title:'安全状态', ui:'label' },
@@ -1406,6 +1414,7 @@ const SETTING_TREE = [
   ]},
   { key:'bq_update_status', title:'库仑状态', ui:'label' },
   { key:'bq_cycle_cnt', title:'循环次数', ui:'label' },
+  { key:'bq_qmax_cycle_count', title:'学习次数', ui:'label' },
   { title:'配置参数', children:[
     { key:'bq_taper_cur', title:'变100%平均电流', ui:'spinbox', min:1000, max:8000, step:100, unit:'mA' },
   ]},
@@ -1731,7 +1740,9 @@ drawChart();
     { id:'current', label:'电流', unit:'A',  defAxis:'L', color:'#22c55e', decimals:3, series:[{k:'bus_i',l:'母线电流'},{k:'bat_i',l:'电池电流'}] },
     { id:'power',   label:'功率', unit:'W',   defAxis:'R', color:'#f59e0b', decimals:3, series:[{k:'bus_p',l:'母线功率'},{k:'bat_p',l:'电池功率'}] },
     { id:'soc',     label:'电量', unit:'%',   defAxis:'R', color:'#8b5cf6', decimals:1, series:[{k:'cap_soc',l:'电量'}] },
-    { id:'temp',    label:'温度', unit:'°C',  defAxis:'R', color:'#f97316', decimals:0, series:[{k:'t_led',l:'LED温度'},{k:'t_m1',l:'MOS1温度'},{k:'t_m2',l:'MOS2温度'},{k:'t_b1',l:'电池1温度'},{k:'t_b2',l:'电池2温度'}] },
+    { id:'mos_temp', label:'MOS温度', unit:'°C', defAxis:'R', color:'#f97316', decimals:0, series:[{k:'t_m1',l:'MOS1温度'},{k:'t_m2',l:'MOS2温度'}] },
+    { id:'bat_temp', label:'电池温度', unit:'°C', defAxis:'R', color:'#ef4444', decimals:0, series:[{k:'t_b1',l:'电池1温度'},{k:'t_b2',l:'电池2温度'}] },
+    { id:'led_temp', label:'LED温度', unit:'°C', defAxis:'R', color:'#facc15', decimals:0, series:[{k:'t_led',l:'LED温度'}] },
     { id:'fan',     label:'风扇', unit:'rpm', defAxis:'R', color:'#06b6d4', decimals:0, series:[{k:'fan',l:'风扇转速'}] },
   ];
   const EVENTS = [
@@ -1875,6 +1886,12 @@ drawChart();
   let dlArm = null;   /* 收到数据时重置停滞超时 */
   let dlStatusTs = 0; /* 下载进度显示节流 */
   let totalRecords = 0;   /* 本次加载总记录数(进度条) */
+  let dlReady = false;       /* 是否已拿到 recs_per_block/offset(回执), 可开始解析 */
+  let dlRecsPerBlock = 1;    /* 每块条数(来自 logs/download 回执) */
+  let dlOffset0 = 0;         /* 本次下载起始记录偏移 */
+  let dlStaging = [];        /* 按文件记录索引稀疏暂存记录(用于断点重取后按序提交) */
+  let dlGaps = [];           /* [{start,end}] 出错记录区间(文件内坐标) */
+  let dlStaged = 0;          /* 本文件已成功入 staging 的记录数(进度显示) */
 
   function crc16ccitt(bytes){
     let c = 0xFFFF;
@@ -1887,14 +1904,21 @@ drawChart();
   }
   function parseDlRecord(u8, base){
     const dv = new DataView(u8.buffer, u8.byteOffset + base, 38);
-    pushRecord(
+    return [
       dv.getUint32(0, true), dv.getInt32(4, true),
       dv.getUint16(8, true), dv.getInt16(10, true), dv.getUint32(12, true),
       dv.getUint16(16, true), dv.getInt16(18, true), dv.getUint32(20, true),
       dv.getUint8(24), dv.getFloat32(25, true),
       dv.getInt8(29), dv.getInt8(30), dv.getInt8(31), dv.getInt8(32), dv.getInt8(33),
       dv.getUint8(34), dv.getUint16(35, true)
-    );
+    ];
+  }
+  /* logs/read JSON 行 -> 与 parseDlRecord 相同的 17 元组(mono,epoch_off,...) */
+  function rowToRec(row){
+    const mono = row[1] || 0;
+    const epoch = row[0] || 0;
+    const epoch_off = epoch !== 0 ? epoch - mono : 0;
+    return [mono, epoch_off, row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], row[12], row[13], row[14], row[15], row[16]];
   }
   function onDlNotify(e){
     if (dlArm) dlArm();   /* 任何数据都视为流存活, 重置停滞超时 */
@@ -1902,6 +1926,9 @@ drawChart();
     const nb = new Uint8Array(dlBuf.length + v.length);
     nb.set(dlBuf, 0); nb.set(v, dlBuf.length);
     dlBuf = nb;
+    if (dlReady) dlParse();   /* 回执(recs_per_block)未到前先只缓冲不解析 */
+  }
+  function dlParse(){
     while (dlBuf.length >= 4){
       const dv = new DataView(dlBuf.buffer, dlBuf.byteOffset);
       const seq = dv.getUint16(0, true), cnt = dv.getUint16(2, true);
@@ -1913,44 +1940,94 @@ drawChart();
       }
       const need = 4 + cnt * 38 + 2;
       if (dlBuf.length < need) break;
-      if (seq !== dlExpect){
-        dlErr = '块序号跳变 期望=' + dlExpect + ' 实际=' + seq;
-        logE(dlErr);
-        if (dlReject){ const r = dlReject; dlReject = null; r(dlErr); }
-        dlExpect = seq + 1;
-      }
       const crc = dv.getUint16(4 + cnt * 38, true);
       const calc = crc16ccitt(dlBuf.subarray(4, 4 + cnt * 38));
+      const blockStart = dlOffset0 + seq * dlRecsPerBlock;
+      /* 序号跳变: [dlExpect, seq) 之间的整块被丢, 记入待重取区间(不中断) */
+      if (seq > dlExpect){
+        const gs = dlOffset0 + dlExpect * dlRecsPerBlock;
+        dlGaps.push({ start: gs, end: blockStart });
+        logW('下载块序号跳变 期望=' + dlExpect + ' 实际=' + seq + ', 待重取 [' + gs + ',' + blockStart + ')');
+      }
       if (calc === crc){
-        for (let i = 0; i < cnt; i++) parseDlRecord(dlBuf, 4 + i * 38);
-      } else logW('下载块 CRC 错误 seq=' + seq);
+        for (let i = 0; i < cnt; i++){ dlStaging[blockStart + i] = parseDlRecord(dlBuf, 4 + i * 38); dlStaged++; }
+      } else {
+        dlGaps.push({ start: blockStart, end: blockStart + cnt });
+        logW('下载块 CRC 错误 seq=' + seq + ', 待重取 [' + blockStart + ',' + (blockStart + cnt) + ')');
+      }
       dlExpect = seq + 1;
       dlBuf = dlBuf.slice(need);
       const now = Date.now();
       if (now - dlStatusTs > 30) {
         dlStatusTs = now;
         const st = document.getElementById('data-status');
-        if (st && st.textContent.startsWith('下载')) st.textContent = '下载中... 已 ' + D.t.length + ' 条';
-        if (totalRecords > 0) setProgress(D.t.length / totalRecords * 100);
+        if (st && st.textContent.startsWith('下载')) st.textContent = '下载中... 已 ' + (D.t.length + dlStaged) + ' 条';
+        if (totalRecords > 0) setProgress((D.t.length + dlStaged) / totalRecords * 100);
       }
     }
   }
+  async function commitDownload(name){
+    /* 1) 重取出错区间(走 logs/read 精确范围) */
+    if (dlGaps.length){
+      logI('下载完成, 重取 ' + dlGaps.length + ' 段出错区间...');
+      for (const g of dlGaps){
+        const need = g.end - g.start;
+        if (need <= 0) continue;
+        try {
+          const r = await call('get', 'logs/read', { name, offset: g.start, count: Math.min(need, 400) });
+          const rows = r.records || [];
+          for (let j = 0; j < rows.length; j++){
+            const idx = g.start + j;
+            dlStaging[idx] = rowToRec(rows[j]);
+          }
+        } catch(err){ logE('重取区间 [' + g.start + ',' + g.end + ') 失败: ' + err); }
+      }
+    }
+    /* 2) 按文件记录索引顺序提交到 D(缺条位置保持空洞, 不静默) */
+    let missing = 0;
+    for (let i = 0; i < dlStaging.length; i++){
+      const rec = dlStaging[i];
+      if (rec) pushRecord.apply(null, rec);
+      else missing++;
+    }
+    if (missing) logW(name + ' 缺失 ' + missing + ' 条(重取失败或尾部缺条)');
+    dlStaging = []; dlGaps = [];
+  }
   function downloadFile(name){
-    return new Promise(async (res, rej) => {
-      dlBuf = new Uint8Array(0); dlExpect = 0; dlErr = null;
+    const f = files.find(x => x.name === name);
+    const est = f && f.records ? f.records : 0;
+    dlBuf = new Uint8Array(0); dlExpect = 0; dlErr = null;
+    dlReady = false;
+    dlRecsPerBlock = 1; dlOffset0 = 0;
+    dlStaging = new Array(est); dlGaps = []; dlStaged = 0;
+    return new Promise((res, rej) => {
       let to = null;
-      const arm = () => { if (to) clearTimeout(to); to = setTimeout(() => { const r = dlReject; dlReject = null; if (r) r('下载超时'); }, 60000); };
-      const done = () => { if (to) clearTimeout(to); res(); };
+      const arm = () => { if (to) clearTimeout(to); to = setTimeout(() => {
+        /* 停滞: 视为流中断, 把 [dlExpect 块起点, 文件尾) 记为待重取区间后提交 */
+        const tailStart = dlOffset0 + dlExpect * dlRecsPerBlock;
+        const tailEnd = est > 0 ? est : dlStaging.length;
+        if (tailEnd > tailStart){ dlGaps.push({ start: tailStart, end: tailEnd }); logW('下载停滞, 待重取尾部 [' + tailStart + ',' + tailEnd + ')'); }
+        const r = dlResolve; dlResolve = null;
+        if (r) r();
+      }, 60000); };
+      const done = () => { if (to) clearTimeout(to); commitDownload(name).then(res, rej); };
       const fail = e => { if (to) clearTimeout(to); rej(e); };
       dlResolve = done; dlReject = fail; dlArm = arm;
       arm();
-      try { await call('get', 'logs/download', { name, offset: 0 }); }
-      catch(e){ dlResolve = null; dlReject = null; fail('logs/download: ' + e); }
+      call('get', 'logs/download', { name, offset: 0 }).then(r => {
+        dlRecsPerBlock = (r && r.recs_per_block) ? r.recs_per_block : 1;
+        dlOffset0 = (r && r.offset) ? r.offset : 0;
+        dlReady = true;
+        dlParse();
+      }, e => { dlResolve = null; dlReject = null; fail('logs/download: ' + e); });
     });
   }
   function dlReset(){
-    dlBuf = new Uint8Array(0); dlResolve = null; dlReject = null;
-    dlExpect = 0; dlErr = null; dlArm = null;
+    const rej = dlReject; dlResolve = null; dlReject = null;
+    dlBuf = new Uint8Array(0); dlExpect = 0; dlErr = null; dlArm = null;
+    dlReady = false; dlRecsPerBlock = 1; dlOffset0 = 0;
+    dlStaging = []; dlGaps = []; dlStaged = 0;
+    if (rej) rej('disconnected');
   }
   window.__zhp2dDl = { onNotify: onDlNotify, reset: dlReset };
 
@@ -2028,18 +2105,17 @@ drawChart();
       const ci = document.createElement('input'); ci.type = 'color'; ci.value = cc.color;
       ci.onchange = () => { cc.color = ci.value; saveCfg(); createChart(); };
       const nm = document.createElement('span'); nm.className = 'cname'; nm.textContent = c.label;
-      const un = document.createElement('span'); un.className = 'cunit'; un.textContent = c.unit;
       const ax = document.createElement('span'); ax.className = 'axis';
       const show = cc.axis !== 'H';
       row.classList.toggle('off', !show);
       const sw = document.createElement('label'); sw.className = 'switch';
       const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = show;
-      cb.onchange = () => { cc.axis = cb.checked ? c.defAxis : 'H'; saveCfg(); createChart(); };
+      cb.onchange = () => { cc.axis = cb.checked ? c.defAxis : 'H'; saveCfg(); createChart(); row.classList.toggle('off', !cb.checked); };
       sw.appendChild(cb);
       const slider = document.createElement('span'); slider.className = 'slider';
       sw.appendChild(slider);
       ax.appendChild(sw);
-      row.appendChild(ci); row.appendChild(nm); row.appendChild(un); row.appendChild(ax);
+      row.appendChild(ci); row.appendChild(nm); row.appendChild(ax);
       host.appendChild(row);
     });
   }
@@ -2122,6 +2198,7 @@ drawChart();
       axisIdx[c.id] = yAxis.length;
       yAxis.push({
         type: 'value', position: 'left', offset: i * AXIS_GAP,
+        scale: true,   /* 自动范围取该分类数据 min~max, 不强制从 0 起 */
         axisLabel: { show: false },
         axisLine: { show: false }, axisTick: { show: false },
         splitLine: { show: i === 0, lineStyle: { color: gridC } },
@@ -2131,6 +2208,7 @@ drawChart();
       axisIdx[c.id] = yAxis.length;
       yAxis.push({
         type: 'value', position: 'right', offset: i * AXIS_GAP,
+        scale: true,   /* 自动范围取该分类数据 min~max, 不强制从 0 起 */
         axisLabel: { show: false },
         axisLine: { show: false }, axisTick: { show: false },
         splitLine: { show: lCats.length === 0 && i === 0, lineStyle: { color: gridC } },
