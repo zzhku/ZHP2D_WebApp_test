@@ -969,6 +969,8 @@ function call(op, path, extra={}){
 
 /* ===================== BLE OTA ===================== */
 const otaState = { file:null };
+/* 滑窗流控状态: acked=设备已写入字节数(progress 通知回报), lastProgAt=最近一次进度时间 */
+const otaFlow = { acked:0, lastProgAt:0 };
 let otaBusy = false;
 const otaPending = new Map();
 function otaLog(m, cls){
@@ -989,6 +991,8 @@ function otaRefreshUI(){
 }
 function handleOtaMsg(msg){
   if (msg.status === 'progress'){
+    otaFlow.acked = msg.w || 0;
+    otaFlow.lastProgAt = Date.now();
     const pct = msg.total ? (msg.w*100/msg.total) : 0;
     const kb = n => n>=1048576 ? (n/1048576).toFixed(2)+'MB' : (n/1024).toFixed(0)+'KB';
     otaSetStatus('上传中 '+kb(msg.w)+' / '+kb(msg.total), pct);
@@ -1038,16 +1042,31 @@ async function otaStart(){
     await otaCall('start', {size: f.size, sha256: sha});
     otaLog('设备就绪, 上传固件...', 'i');
     const CHUNK = 240;
+    const WINDOW = 4096;     /* 在途未确认上限: 设备 progress 每2KB回报一次, 队列32×240≈7.5KB, 窗口填满也不会被 NACK */
+    const STALL_MS = 10000;  /* 窗口等 progress 的停滞超时(偶发丢一条通知由下一条自愈) */
+    otaFlow.acked = 0; otaFlow.lastProgAt = Date.now();
     let off = 0;
     while (off < f.size){
+      /* 滑窗流控: 在途(off-acked)达到窗口上限就等设备回报; 传完不等待, 完整性由 apply 校验兜底 */
+      while (off - otaFlow.acked >= WINDOW){
+        if (!connected) throw new Error('连接已断开');
+        if (Date.now() - otaFlow.lastProgAt > STALL_MS)
+          throw new Error('设备无进度 ('+otaFlow.acked+'/'+f.size+' 在途@'+off+', 超过 '+(STALL_MS/1000)+'s)');
+        await new Promise(rs=>setTimeout(rs, 15));
+      }
       const len = Math.min(CHUNK, f.size - off);
       const slice = new Uint8Array(buf.slice(off, off+len));
-      let ok = false;
+      let ok = false, lastErr = null, wait = 30;
       for (let r=0; r<20 && !ok; r++){
         try { await gattSerialize(async ()=>{ await otaChr.writeValue(slice); }); ok = true; }
-        catch(e){ await new Promise(rs=>setTimeout(rs, 30)); }   /* queue full — retry same chunk */
+        catch(e){
+          if (!connected) throw new Error('连接已断开: '+(e.message||e));
+          lastErr = e;
+          await new Promise(rs=>setTimeout(rs, wait));   /* 指数退避: 30ms 起倍增, 封顶 1s */
+          wait = Math.min(wait*2, 1000);
+        }
       }
-      if (!ok) throw new Error('chunk @'+off+' 写入失败 (重试 20 次)');
+      if (!ok) throw new Error('chunk @'+off+' 写入失败: '+(lastErr && lastErr.message || lastErr));
       off += len;
     }
     otaSetStatus('上传完成, 校验并应用...', 100);
