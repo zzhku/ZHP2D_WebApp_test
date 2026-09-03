@@ -1439,12 +1439,12 @@ const SETTING_TREE = [
   ]},
   { title:'均衡', children:[
     { key:'bq_bal_enable', title:'均衡使能', ui:'switch' },
-    { key:'bq_bal_rest', title:'静置均衡', ui:'switch' },
-    { key:'bq_bal_sleep', title:'睡眠均衡', ui:'switch' },
-    { key:'bq_bal_threshold', title:'均衡电压门限', ui:'spinbox', min:3000, max:4300, step:10, unit:'mV' },
-    { key:'bq_bal_delta_min', title:'均衡压差门槛', ui:'spinbox', min:5, max:200, step:1, unit:'mV' },
-    { key:'bq_bal_status', title:'均衡状态', ui:'label' },
-    { key:'bq_bal_delta_now', title:'当前压差', ui:'label', unit:'mV' },
+    { key:'bq_bal_rest', title:'静置均衡', ui:'switch', hidden:{key:'bq_bal_enable', eq:false} },
+    { key:'bq_bal_sleep', title:'睡眠均衡', ui:'switch', hidden:{key:'bq_bal_enable', eq:false} },
+    { key:'bq_bal_threshold', title:'均衡电压门限', ui:'spinbox', min:3000, max:4300, step:10, unit:'mV', hidden:{key:'bq_bal_enable', eq:false} },
+    { key:'bq_bal_delta_min', title:'均衡压差门槛', ui:'spinbox', min:5, max:200, step:1, unit:'mV', hidden:{key:'bq_bal_enable', eq:false} },
+    { key:'bq_bal_status', title:'均衡状态', ui:'label', hidden:{key:'bq_bal_enable', eq:false} },
+    { key:'bq_bal_delta_now', title:'当前压差', ui:'label', unit:'mV', hidden:{key:'bq_bal_enable', eq:false} },
   ]},
 ]},
 ];
