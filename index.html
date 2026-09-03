@@ -643,7 +643,6 @@
   <div class="card">
     <div class="card-title">
       <span>DEVICE SETTINGS · SCR2</span>
-      <button class="btn sm ghost" id="btn-reload-set">↻ 刷新</button>
     </div>
     <div class="grp-tabs" id="grp-tabs"></div>
     <div id="settings-host">
@@ -1456,6 +1455,7 @@ let navPath=[];          /* 钻取路径: 从顶级分组 children 起每级分�
 let settingSchemaFlat=[]; /* 扁平化后的所有叶子,供 onSettingChange 查找 */
 let valMap={};           /* 当前层级叶子 + hidden 依赖 key 的值 */
 let setEpoch=0;
+let settingsFetchBusy=false; /* 设置值取数串行化: buildSettings 与自动刷新共用, 避免并发请求 */
 SETTING_TREE.forEach(top=> (function walk(n){ if(n.key) settingSchemaFlat.push(n); else if(n.children) n.children.forEach(walk); })(top));
 
 function currentLevelNode(){
@@ -1506,13 +1506,16 @@ async function buildSettings(){
 
   valMap = {};
   const myEpoch = ++setEpoch;
-  for (const k of fetchKeys){
-    if (myEpoch !== setEpoch) return; /* 已切换层级,放弃 */
-    try{
-      const r = await call('get','config/'+k);
-      valMap[k] = (r && 'value' in r) ? r.value : undefined;
-    }catch(e){ logW('get '+k+': '+e); }
-  }
+  settingsFetchBusy = true;
+  try{
+    for (const k of fetchKeys){
+      if (myEpoch !== setEpoch) return; /* 已切换层级,放弃 */
+      try{
+        const r = await call('get','config/'+k);
+        valMap[k] = (r && 'value' in r) ? r.value : undefined;
+      }catch(e){ logW('get '+k+': '+e); }
+    }
+  }finally{ settingsFetchBusy = false; }
   if (myEpoch !== setEpoch) return;
 
   /* 返回栏: 在子菜单内显示,点击回上一级 */
@@ -1583,7 +1586,8 @@ function renderSettingRow(it, cur){
               <span style="font-family:monospace;font-size:12px;min-width:32px;text-align:right" id="sv-${it.key}">${v??0}</span>`;
   } else if (it.ui === 'label'){
     const disp = (cur === undefined || cur === null || cur === '') ? '—' : String(cur);
-    return `<div class="setting"${hdep}${style}><div class="lbl">${it.title}</div><div class="ctrl"><span style="font-family:monospace;color:var(--cyan)">${disp}</span><span class="unit">${it.unit||''}</span></div></div>`;
+    /* data-key 放在行 div 上, 供自动刷新原位更新 .ctrl 下的显示 span */
+    return `<div class="setting" data-key="${it.key}"${hdep}${style}><div class="lbl">${it.title}</div><div class="ctrl"><span style="font-family:monospace;color:var(--cyan)">${disp}</span><span class="unit">${it.unit||''}</span></div></div>`;
   } else if (it.ui === 'spinbox'){
     /* 步进选择器: 仅允许按 step 增减, 禁止直接键入任意值 */
     const sv = (v === undefined || v === null) ? (it.min ?? 0) : v;
@@ -1619,12 +1623,92 @@ async function onSettingChange(el){
   try{
     await call('set','config/'+key, {value});
     logI('SET '+key+' = '+JSON.stringify(value));
+    /* 3s 内自动刷新不回写该 key 的显示, 避免与用户连续点击互搏 */
+    setLocalWriteAt[key] = Date.now();
     /* 更新本地值并动态显隐依赖本项的行/分支(data-hdep),无需整页重建 */
     valMap[key] = value;
     $('settings-host').querySelectorAll(`[data-hdep="${key}"]`).forEach(row=>{
       row.style.display = (String(valMap[key]) === row.dataset.heq) ? 'none' : '';
     });
   }catch(e){ logE('SET '+key+': '+e); }
+}
+
+/* ===================== 设置页自动刷新 ===================== */
+/* 进入设置界面后每 1s 原位刷新当前层级数值(其它界面不请求)。
+   原位更新不重建 DOM: 保留滚动位置, 用户正在操作的行(含焦点)跳过不回写 */
+let setTicker = null;
+let setTickBusy = false;
+const setLocalWriteAt = {}; /* key -> 最近本地写入时间(ms) */
+
+function setLevelSig(){ return currentTop + ':' + navPath.join(','); }
+
+async function refreshSettingsValues(){
+  if (!connected || setTickBusy || settingsFetchBusy) return;
+  const host = $('settings-host');
+  if (!host || !host.querySelector('[data-key]')) return; /* 尚未渲染(未连接/加载中) */
+  const sig = setLevelSig();
+  const level = currentLevelNode();
+  const kids = (level && level.children) || [];
+  const leafKeys = new Set(), depKeys = new Set();
+  kids.forEach(c=>{ if (c.key) leafKeys.add(c.key); if (c.hidden) depKeys.add(c.hidden.key); });
+  const fetchKeys = [...leafKeys, ...[...depKeys].filter(k=>!leafKeys.has(k))];
+  if (!fetchKeys.length) return;
+  setTickBusy = true;
+  try{
+    const fresh = {};
+    for (const k of fetchKeys){
+      if (setLevelSig() !== sig) return; /* 已切换层级,放弃本轮 */
+      try{
+        const r = await call('get','config/'+k);
+        fresh[k] = (r && 'value' in r) ? r.value : undefined;
+      }catch(e){ return; /* 单次失败放弃本轮, 下个周期重试 */ }
+    }
+    if (setLevelSig() !== sig) return;
+    for (const k of fetchKeys){ if (fresh[k] !== undefined) valMap[k] = fresh[k]; }
+    applySettingsValues(fetchKeys);
+  }finally{ setTickBusy = false; }
+}
+
+/* 把 valMap 中指定 key 的值原位写入已渲染的行 */
+function applySettingsValues(keys){
+  const host = $('settings-host');
+  const now = Date.now();
+  for (const k of keys){
+    const v = valMap[k];
+    if (v === undefined) continue;
+    if (now - (setLocalWriteAt[k]||0) < 3000) continue; /* 刚本地写入, 暂不回写显示 */
+    const sch = settingSchemaFlat.find(s=>s.key===k);
+    host.querySelectorAll(`[data-key="${k}"]`).forEach(el=>{
+      if (el.contains(document.activeElement)) return; /* 用户正在编辑该行 */
+      if (sch && sch.ui === 'switch') el.checked = !!v;
+      else if (sch && sch.ui === 'roller') el.value = String(v);
+      else if (sch && sch.ui === 'spinbox'){ el.dataset.val = v; const s = el.querySelector('.sp-val'); if (s) s.textContent = v; }
+      else if (sch && sch.ui === 'slider'){ el.value = v; const lbl = $('sv-'+k); if (lbl) lbl.textContent = v; }
+      else if (sch && sch.ui === 'range'){ el.value = Array.isArray(v) ? (v[parseInt(el.dataset.idx||'0')]??0) : v; }
+      else if (el.tagName === 'INPUT') el.value = v;
+    });
+    /* label 行: data-key 在行 div 上, 值显示在 .ctrl 下的 span */
+    const labelRow = host.querySelector(`.setting[data-key="${k}"]`);
+    if (labelRow && !(labelRow.contains(document.activeElement))){
+      const sp = labelRow.querySelector('.ctrl span');
+      if (sp) sp.textContent = (v === null || v === '') ? '—' : String(v);
+    }
+  }
+  /* 依 valMap 重算显隐(data-hdep 行), 与 onSettingChange 的联动一致 */
+  host.querySelectorAll('[data-hdep]').forEach(row=>{
+    const dep = row.dataset.hdep;
+    if (valMap[dep] === undefined) return;
+    row.style.display = (String(valMap[dep]) === row.dataset.heq) ? 'none' : '';
+  });
+}
+
+function startSetTicker(){
+  if (setTicker) return;
+  setTicker = setInterval(()=>{ refreshSettingsValues(); }, 1000);
+  logI('设置页自动刷新已开启(1s)');
+}
+function stopSetTicker(){
+  if (setTicker){ clearInterval(setTicker); setTicker = null; logI('设置页自动刷新已停止'); }
 }
 
 /* ===================== CSV export ===================== */
@@ -1651,6 +1735,8 @@ function switchView(v){
   $('view-'+v).classList.add('active');
   $$('.tab').forEach(t=>t.classList.toggle('active', t.dataset.view===v));
   if (v==='dash') drawChart();
+  /* 自动刷新只在设置界面运行, 切到其它界面即停止 */
+  if (v==='set') startSetTicker(); else stopSetTicker();
 }
 $$('.tab').forEach(t=> t.onclick = ()=> switchView(t.dataset.view));
 
@@ -1677,7 +1763,6 @@ $('btn-clear-chart').onclick = ()=>{
 };
 $('btn-export-csv').onclick = exportCSV;
 $('btn-clear-log').onclick = ()=>{ $('log').innerHTML=''; };
-$('btn-reload-set').onclick = buildSettings;
 $('btn-connect').onclick = ()=> connectBLE();
 
 /* OTA */
