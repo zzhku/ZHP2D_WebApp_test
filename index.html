@@ -1711,6 +1711,18 @@ function stopSetTicker(){
   if (setTicker){ clearInterval(setTicker); setTicker = null; logI('设置页自动刷新已停止'); }
 }
 
+/* ===================== 设备保活心跳 ===================== */
+/* 页面可见且已连接时每 1s 发一次心跳(get ping): 设备端 web 命令到达即刷新
+   休眠保活窗口, 防止挂机时被自动休眠掐断 BLE 链路(睡眠延迟默认 30s)。
+   页面切到后台(document.hidden)即停发, 设备按睡眠延迟正常休眠, 回到前台需重连;
+   OTA 期间跳过(设备已有传输保活标志, 且上传高频占用链路); 心跳静默不写日志。 */
+function heartbeatTick(){
+  if (!connected || document.hidden || otaBusy) return;
+  call('get','ping').catch(()=>{});
+}
+setInterval(heartbeatTick, 1000);
+document.addEventListener('visibilitychange', ()=>{ if (!document.hidden) heartbeatTick(); });
+
 /* ===================== CSV export ===================== */
 function exportCSV(){
   if (!hist.t.length) { logW('无数据可导出'); return; }
