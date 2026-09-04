@@ -1093,12 +1093,14 @@ function renderTele(d){
   const bv=(d.bus.v/1000), bi=(d.bus.i/1000), bp=(d.bus.p/1000);
   // 使用 BUS 实时功率显示输出功率（W）
   $('pwr-val').textContent = bp.toFixed(1);
-  // scr1 逻辑: sw_reg0x1d 端口状态指示
+  // scr1 逻辑: sw_reg0x1d 端口状态指示; 与 sw_18 通路位相与——
+  // 设备空载断开(0x21)后 0x1D 在线位残留, 通路断开视为未接入
   const sw = d.sw_1d | 0;
+  const sw18 = d.sw_18 | 0;
   let pwrState;
   if (sw & 0x40) pwrState = 'INPUT';                    // bit6: C1 sink(输入端)
-  else if (sw & 0x80 || sw & 0x08) pwrState = 'OUTPUT'; // bit7 C1 source / bit3 A1口(输出端)
-  else if (sw & 0x04) pwrState = 'LED';                  // bit2: A2口(照明端)
+  else if ((sw & 0x80 && sw18 & 0x08) || (sw & 0x08 && sw18 & 0x02)) pwrState = 'OUTPUT'; // C1 source&0x18.bit3 / A1&0x18.bit1
+  else if (sw & 0x04 && sw18 & 0x01) pwrState = 'LED';   // bit2: A2口&0x18.bit0(照明端)
   else pwrState = 'IDLE';
   $('pwr-state').textContent = pwrState;
   const av=(d.bat.v/1000), ai=(d.bat.i/1000), ap=(d.bat.p/1000);
