@@ -1312,7 +1312,7 @@ const SETTING_TREE = [
     { key:'c_no_load_ma', title:'C口电流', ui:'spinbox', min:20, max:500, step:10, unit:'mA', hidden:{key:'c_no_load_check', eq:false} },
     { key:'no_load_wait_s', title:'等待时间', ui:'spinbox', min:5, max:30, step:1, unit:'S' },
     { key:'bq_discharge_cutoff_cell_v', title:'单节截止电压', ui:'spinbox', min:2500, max:3300, step:1, unit:'mV' },
-    { key:'m2_anti_whine', title:'9V协议满载防啸叫', ui:'switch' },
+    { key:'ll_double', title:'协议限流翻倍', ui:'switch' },
   ]},
 { title:'系统', children:[
   { key:'efficiency_source', title:'效率来源', ui:'roller', options:['SW6306V','整机'] },
