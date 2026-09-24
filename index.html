@@ -835,15 +835,19 @@ function setConnUI(on){
   }
 }
 
-/* 首次连接时 TX 订阅(CCCD 写)因"未加密"被拒 -> 触发手机系统配对;
- * Chrome 不会自动重试, 配对完成后这里重试一次。 */
+/* 首次连接时 TX 订阅(CCCD 写)因"未加密"被拒 -> 触发系统配对(设备侧用
+ * MITM: 屏幕显示 6 位配对码, 需要在本机输入)。Chrome 不会自动重试, 这里
+ * 按时间窗口重试: 新配对要留出"读码+输入"的时间, 所以给到约 60s。 */
 async function startNotificationsWithPairing(chr){
-  for (let i=0; i<3; i++){
+  const t0 = Date.now();
+  for (let i=0; ; i++){
     try { await chr.startNotifications(); return; }
     catch(e){
-      if (i < 2){
-        logW('订阅触发配对中, 稍后重试... ('+(e.message||e)+')');
-        await new Promise(r=>setTimeout(r, 2500));
+      const elapsed = Date.now() - t0;
+      if (elapsed < 60000){
+        logW((i===0 ? '订阅触发配对中: 若设备屏幕显示 6 位配对码, 请在本机输入。'
+                    : '等待配对完成…') + ' ('+(e.message||e)+')');
+        await new Promise(r=>setTimeout(r, 3000));
       } else {
         throw e;
       }
@@ -858,17 +862,26 @@ async function connectBLE(){
   }
   try{
     logI('请求设备...');
-    try{
-      device = await navigator.bluetooth.requestDevice({
+    let dev = null;
+    /* 优先复用"已授权过的设备": getDevices() 不需要扫描、不弹选择框 —— 设备被
+       系统占着(已配对电脑的常驻连接)而不广播时, 只有这条路径能连上。
+       首次访问没有授权, 会落到下面的选择框。 */
+    if (navigator.bluetooth.getDevices){
+      try{
+        const ds = await navigator.bluetooth.getDevices();
+        dev = ds.find(d => (d.name||'').startsWith('ZHP2D')) || null;
+        if (dev) logI('复用已授权设备: '+(dev.name||dev.id));
+      }catch(e){ logW('getDevices 失败: '+(e.message||e)); }
+    }
+    if (!dev){
+      /* 注意: 这里不能做 acceptAllDevices 回退 —— await 之后用户手势已失效,
+         第二次 requestDevice 只会抛 "Must be handling a user gesture"。 */
+      dev = await navigator.bluetooth.requestDevice({
         filters:[{ namePrefix:'ZHP2D' }],
         optionalServices:[SVC_UUID]
       });
-    }catch(e){
-      logW('按名筛选失败,改用全列表: '+(e.message||e));
-      device = await navigator.bluetooth.requestDevice({
-        acceptAllDevices:true, optionalServices:[SVC_UUID]
-      });
     }
+    device = dev;
     if (device) device.removeEventListener('gattserverdisconnected', onDisconnect);
     device.addEventListener('gattserverdisconnected', onDisconnect);
     logI('连接 GATT...');
@@ -882,7 +895,7 @@ async function connectBLE(){
     txChr.addEventListener('characteristicvaluechanged', onNotify);
     setConnUI(true);
     otaRefreshUI();
-    logI('已连接 '+device.name+' (等待配对确认...)');
+    logI('已连接 '+device.name+' (等待配对完成...)');
     initAfterPair();
   }catch(e){
     logE('连接失败: '+(e.message||e));
@@ -906,13 +919,13 @@ function onDisconnect(){
 let waitingFirstTele = false;
 async function initAfterPair(){
   waitingFirstTele = true;
-  logI('等待遥测(配对确认后自动开始)...');
+  logI('等待遥测(配对加密完成后自动开始)...');
   const t0 = Date.now();
   while (waitingFirstTele && Date.now() - t0 < 60000){
     await new Promise(r=>setTimeout(r, 200));
   }
   if (waitingFirstTele){
-    logE('配对超时, 请在 ZHP2D 上确认配对后重连');
+    logE('配对未完成: 请在 ZHP2D 屏幕查看 6 位配对码并在本机输入后重试');
     waitingFirstTele = false;
     return;
   }
